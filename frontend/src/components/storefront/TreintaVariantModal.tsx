@@ -62,7 +62,7 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
           </div>
           <div>
             <span className="text-[10px] font-bold text-[#3C6E71] uppercase tracking-wider">
-              {product.category?.name || 'Wally Store'}
+              {product.category?.name || 'Luxora Style'}
             </span>
             <h3 className="text-sm font-black text-[#353535] leading-snug">{product.name}</h3>
             <p className="text-base font-black text-[#353535] font-mono mt-1">

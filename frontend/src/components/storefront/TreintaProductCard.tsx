@@ -69,7 +69,7 @@ export const TreintaProductCard: React.FC<TreintaProductCardProps> = ({
       {/* 2. Product Metadata & Title */}
       <div className="flex-1 space-y-1">
         <div className="flex items-center justify-between text-[11px] font-medium text-[#777777]">
-          <span>{product.brand?.name || 'Wally Selection'}</span>
+          <span>{product.brand?.name || 'Luxora Selection'}</span>
           <span className="font-mono text-[10px]">SKU: {product.sku}</span>
         </div>
 

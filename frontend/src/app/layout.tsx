@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Wally Commerce | Catálogo & POS de Moda',
+  title: 'Luxora Style | Catálogo Oficial & Moda Exclusiva',
   description:
-    'Catálogo exclusivo de moda, tenis, perfumes, relojes, t-shirts, pantalones y gorras.',
+    'Descubre las últimas tendencias en moda, calzado, tenis, perfumes, relojes y accesorios exclusivos en Luxora Style.',
 };
 
 export default function RootLayout({

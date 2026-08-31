@@ -613,7 +613,7 @@ export default function CheckoutPage() {
               </button>
 
               <div className="text-center text-[11px] text-[#777777]">
-                Al confirmar tu pedido, aceptas los términos de entrega de Wally Store.
+                Al confirmar tu pedido, aceptas los términos de entrega de Luxora Style.
               </div>
             </div>
           </div>

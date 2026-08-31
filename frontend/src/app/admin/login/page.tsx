@@ -82,7 +82,7 @@ export default function AdminLoginPage() {
             <ShieldCheck className="h-7 w-7" />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-[#353535]">
-            Wally Enterprise Portal
+            Luxora Style Portal
           </h1>
           <p className="text-xs text-[#777777]">
             Acceso exclusivo y protegido para administradores autorizados

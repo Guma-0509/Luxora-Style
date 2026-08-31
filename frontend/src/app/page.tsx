@@ -295,11 +295,11 @@ export default function StorefrontHomePage() {
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#353535] text-white text-[10px] font-black">
-              W
+              L
             </div>
-            <span className="font-bold text-[#353535]">Wally Enterprise Commerce</span>
+            <span className="font-bold text-[#353535]">Luxora Style Official Store</span>
           </div>
-          <p>© 2026 Wally Store. Todos los derechos reservados.</p>
+          <p>© 2026 Luxora Style. Todos los derechos reservados.</p>
         </div>
       </footer>
 

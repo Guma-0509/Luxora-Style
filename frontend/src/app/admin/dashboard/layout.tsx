@@ -62,11 +62,11 @@ export default function AdminDashboardLayout({
         <div className="flex h-16 items-center justify-between px-6 border-b border-white/10">
           <Link href="/admin/dashboard" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3C6E71] text-white font-black text-sm shadow-subtle">
-              W
+              L
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-black tracking-wider text-white">
-                WALLY ADMIN
+                LUXORA ADMIN
               </span>
               <span className="text-[9px] font-bold text-[#D9D9D9] uppercase tracking-widest">
                 Enterprise Portal

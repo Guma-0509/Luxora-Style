@@ -117,14 +117,14 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-900 text-white font-black text-xl shadow-md">
-              W
+              L
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-none">
-                WALLY
+                LUXORA STYLE
               </span>
               <span className="text-[10px] font-semibold tracking-widest text-brand-dark uppercase">
-                Enterprise
+                Official Store
               </span>
             </div>
           </Link>

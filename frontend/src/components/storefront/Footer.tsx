@@ -61,9 +61,9 @@ export function Footer() {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand font-black text-white text-lg">
-                W
+                L
               </div>
-              <span className="text-xl font-black text-white tracking-tight">WALLY COMMERCE</span>
+              <span className="text-xl font-black text-white tracking-tight">LUXORA STYLE</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
               Plataforma de comercio electrónico líder en tecnología, moda y estilo de vida. Ofrecemos una experiencia de compra intuitiva, productos de alta calidad y entrega garantizada.
@@ -128,7 +128,7 @@ export function Footer() {
 
         {/* Bottom copyright */}
         <div className="mt-12 flex flex-col items-center justify-between border-t border-slate-800 pt-6 text-xs sm:flex-row">
-          <p>© {new Date().getFullYear()} Wally Commerce Inc. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} Luxora Style Inc. Todos los derechos reservados.</p>
           <div className="mt-4 flex items-center space-x-4 sm:mt-0 text-slate-500">
             <span>Visa</span>
             <span>Mastercard</span>

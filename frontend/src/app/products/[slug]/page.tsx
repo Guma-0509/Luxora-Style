@@ -33,10 +33,10 @@ async function getProduct(slug: string): Promise<Product | null> {
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
   const product = await getProduct(params.slug);
-  if (!product) return { title: 'Producto no encontrado | Wally' };
+  if (!product) return { title: 'Producto no encontrado | Luxora Style' };
 
   return {
-    title: `${product.seoTitle || product.name} | Wally Commerce`,
+    title: `${product.seoTitle || product.name} | Luxora Style`,
     description: product.seoDescription || product.shortDescription || product.description.slice(0, 160),
     openGraph: {
       title: product.name,

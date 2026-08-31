@@ -31,7 +31,7 @@ const INITIAL_COUPONS = [
   },
   {
     id: 'coup-2',
-    code: 'WALLYVIP50',
+    code: 'LUXORAVIP50',
     description: '$50 de descuento directo en compras mayores a $300',
     type: 'FIXED_AMOUNT',
     value: 50,

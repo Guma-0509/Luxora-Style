@@ -65,13 +65,13 @@ export const TreintaHeader: React.FC<TreintaHeaderProps> = ({
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2.5 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#353535] text-white font-black text-base shadow-subtle group-hover:bg-[#284B63] transition-colors">
-              W
+              L
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-black tracking-tight text-[#353535] leading-none">
-                WALLY
+                LUXORA STYLE
               </span>
               <span className="text-[9px] font-bold text-[#3C6E71] tracking-widest uppercase mt-0.5">
                 Official Store
@@ -189,7 +189,7 @@ export const TreintaHeader: React.FC<TreintaHeaderProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar productos en Wally..."
+            placeholder="Buscar productos en Luxora Style..."
             className="w-full rounded-xl border border-[#D9D9D9] bg-[#FFFFFF] py-2 pl-9 pr-8 text-xs font-medium text-[#353535] placeholder:text-[#777777] focus:border-[#3C6E71] focus:ring-1 focus:ring-[#3C6E71] focus:outline-none"
           />
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#777777]" />
