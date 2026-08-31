@@ -66,8 +66,12 @@ export const TreintaHeader: React.FC<TreintaHeaderProps> = ({
           </button>
 
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#353535] text-white font-black text-base shadow-subtle group-hover:bg-[#284B63] transition-colors">
-              L
+            <div className="relative h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 overflow-hidden rounded-xl bg-black border border-[#353535] shadow-subtle p-0.5 group-hover:border-[#3C6E71] transition-all flex items-center justify-center">
+              <img
+                src="/logo.png"
+                alt="Luxora Style"
+                className="h-full w-full object-contain"
+              />
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-black tracking-tight text-[#353535] leading-none">

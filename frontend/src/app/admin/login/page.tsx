@@ -78,8 +78,8 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#FFFFFF] px-4 py-12">
       <div className="w-full max-w-md space-y-8 rounded-3xl border border-[#D9D9D9] bg-[#FFFFFF] p-8 sm:p-10 shadow-card animate-fadeIn">
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#3C6E71] text-white shadow-subtle font-black text-xl">
-            <ShieldCheck className="h-7 w-7" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-black border border-[#353535] p-1 shadow-subtle">
+            <img src="/logo.png" alt="Luxora Style" className="h-full w-full object-contain" />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-[#353535]">
             Luxora Style Portal

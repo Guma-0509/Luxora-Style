@@ -61,8 +61,8 @@ export default function AdminDashboardLayout({
         {/* Brand Header */}
         <div className="flex h-16 items-center justify-between px-6 border-b border-white/10">
           <Link href="/admin/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3C6E71] text-white font-black text-sm shadow-subtle">
-              L
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black border border-white/20 overflow-hidden p-0.5 shadow-subtle flex-shrink-0">
+              <img src="/logo.png" alt="Luxora Style" className="h-full w-full object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-black tracking-wider text-white">

@@ -59,9 +59,9 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand info */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand font-black text-white text-lg">
-                L
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black border border-white/20 overflow-hidden p-0.5">
+                <img src="/logo.png" alt="Luxora Style" className="h-full w-full object-contain" />
               </div>
               <span className="text-xl font-black text-white tracking-tight">LUXORA STYLE</span>
             </div>

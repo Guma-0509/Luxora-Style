@@ -115,9 +115,9 @@ export function Header() {
       <div className="border-b border-slate-200 px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 sm:gap-8">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-900 text-white font-black text-xl shadow-md">
-              L
+          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-black border border-[#353535] overflow-hidden p-0.5 shadow-md">
+              <img src="/logo.png" alt="Luxora Style" className="h-full w-full object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-none">

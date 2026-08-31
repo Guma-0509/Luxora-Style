@@ -293,9 +293,9 @@ export default function StorefrontHomePage() {
       {/* 4. Footer */}
       <footer className="mt-16 border-t border-[#D9D9D9] bg-[#FFFFFF] py-8 text-center text-xs text-[#777777]">
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#353535] text-white text-[10px] font-black">
-              L
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-black border border-[#353535] overflow-hidden p-0.5">
+              <img src="/logo.png" alt="Luxora Style" className="h-full w-full object-contain" />
             </div>
             <span className="font-bold text-[#353535]">Luxora Style Official Store</span>
           </div>
