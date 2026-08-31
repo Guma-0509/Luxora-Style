@@ -46,7 +46,6 @@ export default function StorefrontHomePage() {
       .get('/products')
       .then((res: any) => {
         if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          // Normalize products so each one has safe variants
           const normalized = res.data.map((p: any) => {
             if (!p.variants || p.variants.length === 0) {
               return {
@@ -101,23 +100,23 @@ export default function StorefrontHomePage() {
       : products.filter((p) => p.category?.slug === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex flex-col">
+    <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#18191A] text-[#353535] dark:text-[#F5F6F8] flex flex-col transition-colors">
       {/* 1. Header */}
       <TreintaHeader />
 
       {/* 2. Main Storefront Canvas */}
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
         {/* Banner Promocional Elegante */}
-        <div className="mb-6 rounded-3xl border border-[#D9D9D9] bg-[#FFFFFF] p-6 sm:p-8 shadow-subtle flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="mb-6 rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-subtle flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#3C6E71]/10 border border-[#3C6E71]/30 px-3 py-1 text-xs font-bold text-[#3C6E71]">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 border border-[#3C6E71]/30 dark:border-[#4D8B8E]/40 px-3 py-1 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E]">
               <Sparkles className="h-3.5 w-3.5" />
               <span>Colección Exclusiva 2026</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-black text-[#353535] tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-[#353535] dark:text-[#F5F6F8] tracking-tight">
               Moda Urbana, Sneakers & Fragancias de Élite
             </h1>
-            <p className="text-xs sm:text-sm text-[#777777] font-medium">
+            <p className="text-xs sm:text-sm text-[#777777] dark:text-[#A8ABB2] font-medium">
               Explora artículos originales garantizados con envíos rápidos a todo el país y pago 100% protegido.
             </p>
           </div>
@@ -125,9 +124,9 @@ export default function StorefrontHomePage() {
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <Link
               href="/admin/dashboard"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#353535] px-5 py-3 text-xs font-bold text-white hover:bg-[#284B63] transition-all shadow-subtle active:scale-98"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] px-5 py-3 text-xs font-bold text-white hover:bg-[#284B63] dark:hover:bg-[#3C6E71] transition-all shadow-subtle active:scale-98"
             >
-              <ShieldCheck className="h-4 w-4 text-[#3C6E71]" />
+              <ShieldCheck className="h-4 w-4 text-[#3C6E71] dark:text-white" />
               <span>Acceso Administrador</span>
             </Link>
           </div>
@@ -147,22 +146,22 @@ export default function StorefrontHomePage() {
           {/* Product Grid Area */}
           <div className="lg:col-span-2 xl:col-span-3 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-black text-[#353535] tracking-tight">
+              <h2 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] tracking-tight">
                 {selectedCategory === 'all'
                   ? 'Catálogo Completo'
                   : categories.find((c) => c.slug === selectedCategory)?.name || 'Colección'}
               </h2>
-              <span className="text-xs font-bold text-[#777777]">
+              <span className="text-xs font-bold text-[#777777] dark:text-[#A8ABB2]">
                 {filteredProducts.length} productos disponibles
               </span>
             </div>
 
             {filteredProducts.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-[#D9D9D9] bg-[#FFFFFF] p-12 text-center">
-                <p className="text-xs font-bold text-[#353535]">No hay productos en esta categoría</p>
+              <div className="rounded-3xl border border-dashed border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-12 text-center">
+                <p className="text-xs font-bold text-[#353535] dark:text-[#F5F6F8]">No hay productos en esta categoría</p>
                 <button
                   onClick={() => setSelectedCategory('all')}
-                  className="mt-3 text-xs font-bold text-[#3C6E71] hover:underline cursor-pointer"
+                  className="mt-3 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] hover:underline cursor-pointer"
                 >
                   Ver todos los productos
                 </button>
@@ -189,13 +188,13 @@ export default function StorefrontHomePage() {
       </main>
 
       {/* 4. Footer */}
-      <footer className="mt-16 border-t border-[#D9D9D9] bg-[#FFFFFF] py-8 text-center text-xs text-[#777777]">
+      <footer className="mt-16 border-t border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#18191A] py-8 text-center text-xs text-[#777777] dark:text-[#A8ABB2] transition-colors">
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-black border border-[#353535] overflow-hidden p-0.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-black border border-[#353535] dark:border-[#3A3B3C] overflow-hidden p-0.5">
               <img src="/logo.png" alt="Luxora Style" className="h-full w-full object-contain" />
             </div>
-            <span className="font-bold text-[#353535]">Luxora Style Official Store</span>
+            <span className="font-bold text-[#353535] dark:text-[#F5F6F8]">Luxora Style Official Store</span>
           </div>
           <p>© 2026 Luxora Style. Todos los derechos reservados.</p>
         </div>

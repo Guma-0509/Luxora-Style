@@ -96,12 +96,12 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex flex-col">
+    <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#18191A] text-[#353535] dark:text-[#F5F6F8] flex flex-col transition-colors">
       <TreintaHeader searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
       <main className="mx-auto max-w-7xl w-full flex-1 p-3 sm:p-5 flex flex-col gap-4">
         {/* Category Pills Bar */}
-        <div className="rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] p-2 px-3 shadow-subtle">
+        <div className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-2 px-3 shadow-subtle">
           <TreintaCategoryPills
             categories={categories}
             activeCategory={activeCategory}
@@ -117,33 +117,33 @@ export default function ProductsPage() {
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
                   <div
                     key={n}
-                    className="h-56 rounded-2xl bg-[#FFFFFF] border border-[#D9D9D9] animate-pulse p-4 flex flex-col items-center justify-between shadow-subtle"
+                    className="h-56 rounded-2xl bg-[#FFFFFF] dark:bg-[#242526] border border-[#D9D9D9] dark:border-[#3A3B3C] animate-pulse p-4 flex flex-col items-center justify-between shadow-subtle"
                   >
-                    <div className="h-28 w-28 rounded-xl bg-[#D9D9D9]/30" />
-                    <div className="h-4 w-16 bg-[#D9D9D9]/40 rounded" />
-                    <div className="h-3 w-24 bg-[#D9D9D9]/40 rounded" />
+                    <div className="h-28 w-28 rounded-xl bg-[#D9D9D9]/30 dark:bg-[#1E1F20]" />
+                    <div className="h-4 w-16 bg-[#D9D9D9]/40 dark:bg-[#3A3B3C] rounded" />
+                    <div className="h-3 w-24 bg-[#D9D9D9]/40 dark:bg-[#3A3B3C] rounded" />
                   </div>
                 ))}
               </div>
             ) : filteredProducts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[#D9D9D9] bg-[#FFFFFF] p-16 text-center shadow-subtle">
-                <PackageSearch className="h-10 w-10 text-[#777777] mb-3" />
-                <h3 className="text-sm font-bold text-[#353535]">No se encontraron productos</h3>
-                <p className="text-xs text-[#777777] mt-1">Prueba cambiando los filtros.</p>
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-16 text-center shadow-subtle">
+                <PackageSearch className="h-10 w-10 text-[#777777] dark:text-[#A8ABB2] mb-3" />
+                <h3 className="text-sm font-bold text-[#353535] dark:text-[#F5F6F8]">No se encontraron productos</h3>
+                <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">Prueba cambiando los filtros.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
                 <Link
                   href="/admin/dashboard/products"
-                  className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D9D9D9] bg-[#FFFFFF] p-4 text-center hover:border-[#3C6E71] hover:bg-[#3C6E71]/5 transition-all cursor-pointer group min-h-[220px]"
+                  className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-4 text-center hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:bg-[#3C6E71]/5 dark:hover:bg-[#4D8B8E]/5 transition-all cursor-pointer group min-h-[220px]"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D9D9D9]/40 text-[#353535] group-hover:bg-[#353535] group-hover:text-white transition-colors mb-2">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D9D9D9]/40 dark:bg-[#3A3B3C] text-[#353535] dark:text-[#F5F6F8] group-hover:bg-[#353535] dark:group-hover:bg-[#4D8B8E] group-hover:text-white transition-colors mb-2">
                     <PlusCircle className="h-6 w-6" />
                   </div>
-                  <span className="text-xs font-bold text-[#353535] group-hover:text-[#3C6E71]">
+                  <span className="text-xs font-bold text-[#353535] dark:text-[#F5F6F8] group-hover:text-[#3C6E71] dark:group-hover:text-[#4D8B8E]">
                     Crear producto
                   </span>
-                  <span className="text-[10px] text-[#777777] mt-0.5">Agregar al catálogo</span>
+                  <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] mt-0.5">Agregar al catálogo</span>
                 </Link>
 
                 {filteredProducts.map((product) => (

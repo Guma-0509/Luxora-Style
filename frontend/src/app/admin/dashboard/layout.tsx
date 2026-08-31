@@ -4,30 +4,29 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../store/authStore';
+import { ThemeToggle } from '../../../components/common/ThemeToggle';
 import {
   LayoutDashboard,
   Package,
+  Layers,
+  ShoppingBag,
+  Ticket,
   Boxes,
-  ShoppingCart,
-  Tag,
-  ShieldCheck,
-  LogOut,
-  FolderTree,
+  History,
   Store,
+  LogOut,
   Menu,
   X,
-  Bell,
-  User,
 } from 'lucide-react';
 
 const NAVIGATION_ITEMS = [
-  { name: 'Métricas & Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { name: 'Productos & Catálogo', href: '/admin/dashboard/products', icon: Package },
-  { name: 'Categorías', href: '/admin/dashboard/categories', icon: FolderTree },
-  { name: 'Inventario & Almacén', href: '/admin/dashboard/inventory', icon: Boxes },
-  { name: 'Pedidos & Ventas', href: '/admin/dashboard/orders', icon: ShoppingCart },
-  { name: 'Cupones & Promos', href: '/admin/dashboard/coupons', icon: Tag },
-  { name: 'Auditoría & Seguridad', href: '/admin/dashboard/audit-logs', icon: ShieldCheck },
+  { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { name: 'Productos', href: '/admin/dashboard/products', icon: Package },
+  { name: 'Categorías', href: '/admin/dashboard/categories', icon: Layers },
+  { name: 'Inventario', href: '/admin/dashboard/inventory', icon: Boxes },
+  { name: 'Pedidos', href: '/admin/dashboard/orders', icon: ShoppingBag },
+  { name: 'Cupones & Promos', href: '/admin/dashboard/coupons', icon: Ticket },
+  { name: 'Auditoría & Logs', href: '/admin/dashboard/audit-logs', icon: History },
 ];
 
 export default function AdminDashboardLayout({
@@ -51,10 +50,10 @@ export default function AdminDashboardLayout({
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex text-[#353535]">
+    <div className="flex min-h-screen bg-[#FFFFFF] dark:bg-[#18191A] text-[#353535] dark:text-[#F5F6F8]">
       {/* 1. Sidebar - CARBÓN #353535 */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#353535] border-r border-[#353535] text-white transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#353535] dark:bg-[#121314] border-r border-[#353535] dark:border-[#2E3236] text-white transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
           isMobileNavOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -95,7 +94,7 @@ export default function AdminDashboardLayout({
                 onClick={() => setIsMobileNavOpen(false)}
                 className={`flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-xs font-bold transition-all ${
                   isActive
-                    ? 'bg-[#3C6E71] text-white shadow-subtle'
+                    ? 'bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-subtle'
                     : 'text-[#D9D9D9] hover:bg-[#284B63] hover:text-white'
                 }`}
               >
@@ -127,39 +126,42 @@ export default function AdminDashboardLayout({
       </aside>
 
       {/* 2. Main Content Canvas */}
-      <div className="flex flex-1 flex-col min-w-0 bg-[#FFFFFF]">
+      <div className="flex flex-1 flex-col min-w-0 bg-[#FFFFFF] dark:bg-[#18191A]">
         {/* Top Navbar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#D9D9D9] bg-[#FFFFFF] px-4 sm:px-8 shadow-subtle">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#18191A] px-4 sm:px-8 shadow-subtle transition-colors">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileNavOpen(true)}
-              className="rounded-xl p-2 text-[#353535] hover:bg-[#D9D9D9]/30 lg:hidden"
+              className="rounded-xl p-2 text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="text-xs font-bold text-[#777777] hidden sm:inline">
+            <span className="text-xs font-bold text-[#777777] dark:text-[#A8ABB2] hidden sm:inline">
               Panel Administrativo Enterprise
             </span>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] bg-[#FFFFFF] px-3 py-1.5 text-xs font-bold text-[#353535] hover:bg-[#D9D9D9]/30 hover:border-[#353535] transition-all shadow-subtle"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] px-3 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:border-[#353535] dark:hover:border-[#4D8B8E] transition-all shadow-subtle"
             >
-              <Store className="h-3.5 w-3.5 text-[#3C6E71]" />
+              <Store className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
               <span>Ir a Catálogo</span>
             </Link>
 
-            <div className="flex items-center gap-2 pl-2 border-l border-[#D9D9D9]">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#353535] text-white font-bold text-xs">
+            <div className="flex items-center gap-2 pl-2 border-l border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#353535] dark:bg-[#2E3236] text-white font-bold text-xs">
                 {user ? user.firstName?.[0] : 'A'}
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-black text-[#353535] leading-none">
+                <p className="text-xs font-black text-[#353535] dark:text-[#F5F6F8] leading-none">
                   {user ? `${user.firstName} ${user.lastName}` : 'Administrador'}
                 </p>
-                <span className="text-[10px] font-bold text-[#3C6E71] uppercase">
+                <span className="text-[10px] font-bold text-[#3C6E71] dark:text-[#4D8B8E] uppercase">
                   {user?.role || 'SUPER_ADMIN'}
                 </span>
               </div>
@@ -168,7 +170,7 @@ export default function AdminDashboardLayout({
         </header>
 
         {/* Content Container */}
-        <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-8 overflow-y-auto bg-[var(--bg-primary)]">
           {children}
         </main>
       </div>

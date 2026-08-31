@@ -26,8 +26,8 @@ export const TreintaCategoryPills: React.FC<CategoryPillsProps> = ({
           onClick={() => onSelectCategory('all')}
           className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all shadow-subtle cursor-pointer ${
             currentCategory === 'all'
-              ? 'bg-[#3C6E71] text-white shadow-card scale-102'
-              : 'border border-[#D9D9D9] bg-[#FFFFFF] text-[#353535] hover:bg-[#D9D9D9]/30 hover:border-[#353535]'
+              ? 'bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-card scale-102'
+              : 'border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:border-[#353535] dark:hover:border-[#4D8B8E]'
           }`}
         >
           <Sparkles className="h-3.5 w-3.5" />
@@ -43,8 +43,8 @@ export const TreintaCategoryPills: React.FC<CategoryPillsProps> = ({
               onClick={() => onSelectCategory(category.slug)}
               className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all shadow-subtle cursor-pointer ${
                 isSelected
-                  ? 'bg-[#3C6E71] text-white shadow-card scale-102'
-                  : 'border border-[#D9D9D9] bg-[#FFFFFF] text-[#353535] hover:bg-[#D9D9D9]/30 hover:border-[#353535]'
+                  ? 'bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-card scale-102'
+                  : 'border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:border-[#353535] dark:hover:border-[#4D8B8E]'
               }`}
             >
               <span>{category.name}</span>

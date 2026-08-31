@@ -166,24 +166,24 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4 animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-[#D9D9D9] bg-[#FFFFFF] p-6 shadow-dropdown sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 shadow-dropdown sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 rounded-full p-2 text-[#777777] hover:bg-[#D9D9D9]/30 hover:text-[#353535] transition-colors cursor-pointer"
+          className="absolute right-5 top-5 rounded-full p-2 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:text-[#353535] dark:hover:text-[#F5F6F8] transition-colors cursor-pointer"
           aria-label="Cerrar modal"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Product Preview Card */}
-        <div className="flex gap-4 items-center border-b border-[#D9D9D9] pb-5">
-          <div className="h-22 w-22 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-[#D9D9D9]/20 border border-[#D9D9D9] p-1 shadow-xs">
+        <div className="flex gap-4 items-center border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-5">
+          <div className="h-22 w-22 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C] p-1 shadow-xs">
             <img
               src={primaryImage}
               alt={product.name}
@@ -191,25 +191,25 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
             />
           </div>
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-[#3C6E71] uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-[#3C6E71] dark:text-[#4D8B8E] uppercase tracking-wider">
               {product.category?.name || 'Luxora Style'}
             </span>
-            <h3 className="text-base font-black text-[#353535] leading-snug">{product.name}</h3>
+            <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] leading-snug">{product.name}</h3>
             <div className="flex items-center gap-3">
-              <span className="text-lg font-black text-[#353535] font-mono">
+              <span className="text-lg font-black text-[#353535] dark:text-[#F5F6F8] font-mono">
                 {formatCurrency(currentPrice)}
               </span>
               {currentStock > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#3C6E71]/10 px-2 py-0.5 text-[10px] font-bold text-[#3C6E71]">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-2 py-0.5 text-[10px] font-bold text-[#3C6E71] dark:text-[#4D8B8E]">
                   <CheckCircle2 className="h-3 w-3" /> {currentStock} en stock
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#D9D9D9] px-2 py-0.5 text-[10px] font-bold text-[#777777]">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#D9D9D9] dark:bg-[#3A3B3C] px-2 py-0.5 text-[10px] font-bold text-[#777777] dark:text-[#A8ABB2]">
                   <AlertCircle className="h-3 w-3" /> Agotado
                 </span>
               )}
             </div>
-            <p className="text-[10px] font-mono text-[#777777]">SKU: {currentVariant.sku}</p>
+            <p className="text-[10px] font-mono text-[#777777] dark:text-[#A8ABB2]">SKU: {currentVariant.sku}</p>
           </div>
         </div>
 
@@ -217,8 +217,8 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
         {colors.length > 0 && (
           <div className="space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-bold uppercase tracking-wider text-[#353535]">Color / Estilo:</span>
-              <span className="font-bold text-[#3C6E71]">{selectedColor || colors[0]}</span>
+              <span className="font-bold uppercase tracking-wider text-[#353535] dark:text-[#F5F6F8]">Color / Estilo:</span>
+              <span className="font-bold text-[#3C6E71] dark:text-[#4D8B8E]">{selectedColor || colors[0]}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {colors.map((col) => {
@@ -230,8 +230,8 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
                     onClick={() => handleSelectColor(col)}
                     className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-2 border-[#3C6E71] bg-[#3C6E71] text-white shadow-subtle'
-                        : 'border border-[#D9D9D9] bg-[#FFFFFF] text-[#353535] hover:border-[#353535] hover:bg-[#D9D9D9]/20'
+                        ? 'border-2 border-[#3C6E71] dark:border-[#4D8B8E] bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-subtle'
+                        : 'border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] text-[#353535] dark:text-[#F5F6F8] hover:border-[#353535] dark:hover:border-[#4D8B8E] hover:bg-[#D9D9D9]/20 dark:hover:bg-[#2E3236]'
                     }`}
                   >
                     {isSelected && <Check className="h-3.5 w-3.5" />}
@@ -247,8 +247,8 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
         {sizes.length > 0 && (
           <div className="space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-bold uppercase tracking-wider text-[#353535]">Talla / Medida:</span>
-              <span className="font-bold text-[#3C6E71]">{selectedSize || sizes[0]}</span>
+              <span className="font-bold uppercase tracking-wider text-[#353535] dark:text-[#F5F6F8]">Talla / Medida:</span>
+              <span className="font-bold text-[#3C6E71] dark:text-[#4D8B8E]">{selectedSize || sizes[0]}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {sizes.map((sz) => {
@@ -260,8 +260,8 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
                     onClick={() => handleSelectSize(sz)}
                     className={`flex min-w-[48px] items-center justify-center rounded-xl px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-2 border-[#3C6E71] bg-[#3C6E71] text-white shadow-subtle scale-102'
-                        : 'border border-[#D9D9D9] bg-[#FFFFFF] text-[#353535] hover:border-[#353535] hover:bg-[#D9D9D9]/20'
+                        ? 'border-2 border-[#3C6E71] dark:border-[#4D8B8E] bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-subtle scale-102'
+                        : 'border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] text-[#353535] dark:text-[#F5F6F8] hover:border-[#353535] dark:hover:border-[#4D8B8E] hover:bg-[#D9D9D9]/20 dark:hover:bg-[#2E3236]'
                     }`}
                   >
                     <span>{sz}</span>
@@ -275,7 +275,7 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
         {/* 3. Variant List Cards (All Combinations) */}
         {product.variants && product.variants.length > 0 && (
           <div className="space-y-2.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#353535]">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#353535] dark:text-[#F5F6F8]">
               Opciones & Variantes Disponibles ({product.variants.length}):
             </label>
             <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto pr-1">
@@ -298,17 +298,17 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
                     }}
                     className={`flex items-center justify-between rounded-2xl border p-3 text-xs font-bold transition-all text-left cursor-pointer ${
                       isSelected
-                        ? 'border-[#3C6E71] bg-[#3C6E71] text-white shadow-subtle'
+                        ? 'border-[#3C6E71] dark:border-[#4D8B8E] bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-subtle'
                         : isOut
-                        ? 'border-[#D9D9D9] bg-[#D9D9D9]/20 text-[#777777] cursor-not-allowed opacity-50'
-                        : 'border-[#D9D9D9] bg-[#FFFFFF] text-[#353535] hover:bg-[#D9D9D9]/20 hover:border-[#353535]'
+                        ? 'border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20] text-[#777777] dark:text-[#A8ABB2] cursor-not-allowed opacity-50'
+                        : 'border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/20 dark:hover:bg-[#2E3236] hover:border-[#353535] dark:hover:border-[#4D8B8E]'
                     }`}
                   >
                     <div className="truncate pr-2">
                       <p className="truncate">{v.title}</p>
                       <span
                         className={`text-[10px] block font-mono ${
-                          isSelected ? 'text-white/80' : 'text-[#777777]'
+                          isSelected ? 'text-white/80' : 'text-[#777777] dark:text-[#A8ABB2]'
                         }`}
                       >
                         {isOut ? 'Agotado temporalmente' : `${v.stock} unidades disponibles`}
@@ -323,30 +323,30 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
         )}
 
         {/* 4. Quantity Stepper */}
-        <div className="flex items-center justify-between border-t border-[#D9D9D9] pt-4">
+        <div className="flex items-center justify-between border-t border-[#D9D9D9] dark:border-[#3A3B3C] pt-4">
           <div className="flex flex-col">
-            <span className="text-xs font-bold text-[#353535]">Cantidad:</span>
-            <span className="text-[10px] text-[#777777]">
+            <span className="text-xs font-bold text-[#353535] dark:text-[#F5F6F8]">Cantidad:</span>
+            <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">
               Máx: {currentStock} unidades
             </span>
           </div>
-          <div className="flex items-center rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] p-1 shadow-subtle">
+          <div className="flex items-center rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] p-1 shadow-subtle">
             <button
               type="button"
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
               disabled={quantity <= 1 || isOutOfStock}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-[#353535] hover:bg-[#D9D9D9]/40 disabled:opacity-30 transition-colors cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/40 dark:hover:bg-[#2E3236] disabled:opacity-30 transition-colors cursor-pointer"
             >
               <Minus className="h-4 w-4" />
             </button>
-            <span className="w-10 text-center text-xs font-black text-[#353535] font-mono">
+            <span className="w-10 text-center text-xs font-black text-[#353535] dark:text-[#F5F6F8] font-mono">
               {quantity}
             </span>
             <button
               type="button"
               onClick={() => setQuantity(Math.min(currentStock > 0 ? currentStock : 99, quantity + 1))}
               disabled={quantity >= currentStock || isOutOfStock}
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-[#353535] hover:bg-[#D9D9D9]/40 disabled:opacity-30 transition-colors cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/40 dark:hover:bg-[#2E3236] disabled:opacity-30 transition-colors cursor-pointer"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -360,10 +360,10 @@ export const TreintaVariantModal: React.FC<TreintaVariantModalProps> = ({
           disabled={isOutOfStock}
           className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-black text-white shadow-subtle transition-all transform active:scale-98 cursor-pointer ${
             isOutOfStock
-              ? 'bg-[#D9D9D9] text-[#777777] cursor-not-allowed'
+              ? 'bg-[#D9D9D9] dark:bg-[#3A3B3C] text-[#777777] dark:text-[#A8ABB2] cursor-not-allowed'
               : justAdded
-              ? 'bg-[#3C6E71] scale-102 ring-2 ring-[#3C6E71]'
-              : 'bg-[#353535] hover:bg-[#284B63]'
+              ? 'bg-[#3C6E71] dark:bg-[#4D8B8E] scale-102 ring-2 ring-[#3C6E71]'
+              : 'bg-[#353535] dark:bg-[#4D8B8E] hover:bg-[#284B63] dark:hover:bg-[#3C6E71]'
           }`}
         >
           {justAdded ? (

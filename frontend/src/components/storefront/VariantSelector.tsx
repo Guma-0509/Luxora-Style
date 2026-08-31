@@ -106,10 +106,10 @@ export function VariantSelector({
         return (
           <div key={attrKey} className="space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold uppercase tracking-wider text-[#353535]">
+              <span className="font-bold uppercase tracking-wider text-[#353535] dark:text-[#F5F6F8]">
                 {attrKey}:
               </span>
-              <span className="font-bold text-[#3C6E71]">{currentValue}</span>
+              <span className="font-bold text-[#3C6E71] dark:text-[#4D8B8E]">{currentValue}</span>
             </div>
 
             <div className="flex flex-wrap gap-2.5">
@@ -127,10 +127,10 @@ export function VariantSelector({
                     onClick={() => handleSelectAttribute(attrKey, val)}
                     className={`relative flex items-center justify-center rounded-xl border px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
                       isSelected
-                        ? 'border-2 border-[#3C6E71] bg-[#3C6E71] text-white shadow-subtle'
+                        ? 'border-2 border-[#3C6E71] dark:border-[#4D8B8E] bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-subtle'
                         : hasStock
-                        ? 'border-[#D9D9D9] bg-[#FFFFFF] text-[#353535] hover:border-[#353535] hover:bg-[#D9D9D9]/20'
-                        : 'border-[#D9D9D9] bg-[#D9D9D9]/20 text-[#777777] line-through opacity-50'
+                        ? 'border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] text-[#353535] dark:text-[#F5F6F8] hover:border-[#353535] dark:hover:border-[#4D8B8E] hover:bg-[#D9D9D9]/20 dark:hover:bg-[#2E3236]'
+                        : 'border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20]/50 text-[#777777] dark:text-[#A8ABB2] line-through opacity-50'
                     }`}
                   >
                     <span>{val}</span>
@@ -145,7 +145,7 @@ export function VariantSelector({
 
       {/* 2. Full Variant Cards Matrix (Direct click on any option) */}
       <div className="space-y-2 pt-2">
-        <span className="block text-xs font-bold uppercase tracking-wider text-[#353535]">
+        <span className="block text-xs font-bold uppercase tracking-wider text-[#353535] dark:text-[#F5F6F8]">
           Todas las Combinaciones Disponibles:
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto">
@@ -161,17 +161,17 @@ export function VariantSelector({
                 onClick={() => onSelectVariant(v)}
                 className={`flex items-center justify-between rounded-xl border p-2.5 text-xs font-bold transition-all text-left cursor-pointer ${
                   isSelected
-                    ? 'border-[#3C6E71] bg-[#3C6E71] text-white shadow-subtle'
+                    ? 'border-[#3C6E71] dark:border-[#4D8B8E] bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-subtle'
                     : isOut
-                    ? 'border-[#D9D9D9] bg-[#D9D9D9]/30 text-[#777777] cursor-not-allowed opacity-50'
-                    : 'border-[#D9D9D9] bg-[#FFFFFF] text-[#353535] hover:border-[#353535] hover:bg-[#D9D9D9]/20'
+                    ? 'border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/30 dark:bg-[#1E1F20] text-[#777777] dark:text-[#A8ABB2] cursor-not-allowed opacity-50'
+                    : 'border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] text-[#353535] dark:text-[#F5F6F8] hover:border-[#353535] dark:hover:border-[#4D8B8E] hover:bg-[#D9D9D9]/20 dark:hover:bg-[#2E3236]'
                 }`}
               >
                 <div className="truncate pr-2">
                   <p className="truncate text-xs">{v.title}</p>
                   <span
                     className={`text-[10px] block font-mono ${
-                      isSelected ? 'text-white/80' : 'text-[#777777]'
+                      isSelected ? 'text-white/80' : 'text-[#777777] dark:text-[#A8ABB2]'
                     }`}
                   >
                     {isOut ? 'Agotado' : `${v.stock} disponibles`}
