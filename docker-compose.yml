@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # 1. DATABASE: PostgreSQL 16
+  # ==========================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: wally-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wally_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wally_secret_pass_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-wally_commerce_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wally_user} -d ${POSTGRES_DB:-wally_commerce_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wally-network
+
+  # ==========================================
+  # 2. CACHE & QUEUES: Redis 7
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: wally-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wally-network
+
+  # ==========================================
+  # 3. BACKEND API: NestJS + Prisma
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wally-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-wally_user}:${POSTGRES_PASSWORD:-wally_secret_pass_2026}@postgres:5432/${POSTGRES_DB:-wally_commerce_db}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-wally_access_super_secret_jwt_key_2026_enterprise}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-wally_refresh_super_secret_jwt_key_2026_enterprise}
+      JWT_ACCESS_EXPIRATION: 15m
+      JWT_REFRESH_EXPIRATION: 7d
+      CORS_ORIGIN: http://localhost:3000
+      THROTTLE_TTL: 60
+      THROTTLE_LIMIT: 100
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wally-network
+
+  # ==========================================
+  # 4. FRONTEND: Next.js 14 Storefront & Admin
+  # ==========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+    container_name: wally-frontend
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - wally-network
+
+# ==========================================
+# VOLUMES & NETWORKS
+# ==========================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  wally-network:
+    driver: bridge

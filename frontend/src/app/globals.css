@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-carbon: #353535;
+  --color-teal: #3C6E71;
+  --color-white: #FFFFFF;
+  --color-gray: #D9D9D9;
+  --color-petroleum: #284B63;
+
+  --background: #FFFFFF;
+  --foreground: #353535;
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FFFFFF;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D9D9D9;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3C6E71;
+}
+
+/* Focus Ring */
+*:focus-visible {
+  outline: 2px solid #3C6E71 !important;
+  outline-offset: 2px;
+}
+
+/* Smooth Transitions */
+button, a, input, select, textarea {
+  transition: all 0.15s ease-in-out;
+}
