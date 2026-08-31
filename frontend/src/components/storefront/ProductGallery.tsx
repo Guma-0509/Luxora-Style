@@ -37,10 +37,10 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
           <button
             key={img.id}
             onClick={() => setSelectedImage(img.url)}
-            className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+            className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
               selectedImage === img.url
-                ? 'border-primary-900 ring-2 ring-primary-900/20'
-                : 'border-slate-200 opacity-70 hover:opacity-100'
+                ? 'border-[#3C6E71] dark:border-[#4D8B8E] ring-2 ring-[#3C6E71]/30'
+                : 'border-[#D9D9D9] dark:border-[#3A3B3C] opacity-70 hover:opacity-100'
             }`}
           >
             <img
@@ -53,7 +53,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
       </div>
 
       {/* Main Image viewer */}
-      <div className="relative aspect-square flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+      <div className="relative aspect-square flex-1 overflow-hidden rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20]">
         <img
           src={selectedImage}
           alt={productName}

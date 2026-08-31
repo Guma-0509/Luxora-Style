@@ -2,15 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { api } from '../lib/api';
-import { Product, Category, ProductVariant } from '../types';
+import { Product } from '../types';
 import { TreintaHeader } from '../components/storefront/TreintaHeader';
 import { TreintaCategoryPills } from '../components/storefront/TreintaCategoryPills';
 import { TreintaProductCard } from '../components/storefront/TreintaProductCard';
 import { TreintaLiveCart } from '../components/storefront/TreintaLiveCart';
 import { TreintaVariantModal } from '../components/storefront/TreintaVariantModal';
 import { useCartStore } from '../store/cartStore';
-import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from '../lib/mockData';
+import { useCatalog } from '../lib/catalogStore';
 import {
   Sparkles,
   ShoppingBag,
@@ -23,8 +22,7 @@ import {
 } from 'lucide-react';
 
 export default function StorefrontHomePage() {
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const { products, categories, loading } = useCatalog();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [modalProduct, setModalProduct] = useState<Product | null>(null);
 
@@ -32,42 +30,6 @@ export default function StorefrontHomePage() {
 
   useEffect(() => {
     initCart();
-
-    api
-      .get('/categories')
-      .then((res: any) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          setCategories(res.data);
-        }
-      })
-      .catch(() => {});
-
-    api
-      .get('/products')
-      .then((res: any) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          const normalized = res.data.map((p: any) => {
-            if (!p.variants || p.variants.length === 0) {
-              return {
-                ...p,
-                variants: [
-                  {
-                    id: `var-${p.id}`,
-                    sku: p.sku || `SKU-${p.id}`,
-                    title: 'Estándar',
-                    price: p.basePrice || 0,
-                    stock: 50,
-                    attributes: {},
-                  },
-                ],
-              };
-            }
-            return p;
-          });
-          setProducts(normalized);
-        }
-      })
-      .catch(() => {});
   }, [initCart]);
 
   const handleQuickAdd = (product: any) => {
@@ -94,10 +56,13 @@ export default function StorefrontHomePage() {
     addItem(product, variant, quantity);
   };
 
+  // Filter published products
+  const activeProducts = products.filter((p) => (p as any).status !== 'DRAFT');
+
   const filteredProducts =
     selectedCategory === 'all'
-      ? products
-      : products.filter((p) => p.category?.slug === selectedCategory);
+      ? activeProducts
+      : activeProducts.filter((p) => p.category?.slug === selectedCategory);
 
   return (
     <div className="min-h-screen bg-[#FFFFFF] dark:bg-[#18191A] text-[#353535] dark:text-[#F5F6F8] flex flex-col transition-colors">
@@ -123,11 +88,11 @@ export default function StorefrontHomePage() {
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <Link
-              href="/admin/dashboard"
+              href="/admin/dashboard/products"
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] px-5 py-3 text-xs font-bold text-white hover:bg-[#284B63] dark:hover:bg-[#3C6E71] transition-all shadow-subtle active:scale-98"
             >
               <ShieldCheck className="h-4 w-4 text-[#3C6E71] dark:text-white" />
-              <span>Acceso Administrador</span>
+              <span>Gestionar Catálogo</span>
             </Link>
           </div>
         </div>
@@ -148,7 +113,7 @@ export default function StorefrontHomePage() {
             <div className="flex items-center justify-between">
               <h2 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] tracking-tight">
                 {selectedCategory === 'all'
-                  ? 'Catálogo Completo'
+                  ? 'Catálogo Completo en Primera Plana'
                   : categories.find((c) => c.slug === selectedCategory)?.name || 'Colección'}
               </h2>
               <span className="text-xs font-bold text-[#777777] dark:text-[#A8ABB2]">

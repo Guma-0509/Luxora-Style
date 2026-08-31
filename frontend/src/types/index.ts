@@ -41,10 +41,11 @@ export interface ProductImage {
 }
 
 export interface ProductSpecification {
-  id: string;
-  key: string;
+  id?: string;
+  key?: string;
+  name?: string;
   value: string;
-  displayOrder: number;
+  displayOrder?: number;
 }
 
 export interface ProductVariant {
@@ -59,7 +60,7 @@ export interface ProductVariant {
   stock: number;
   weight?: number | null;
   imageUrl?: string | null;
-  isActive: boolean;
+  isActive?: boolean;
 }
 
 export interface Product {
@@ -73,14 +74,15 @@ export interface Product {
   compareAtPrice?: number | null;
   costPrice?: number | null;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  isFeatured: boolean;
-  isNewArrival: boolean;
+  totalStock?: number;
+  isFeatured?: boolean;
+  isNewArrival?: boolean;
   weight?: number;
   length?: number;
   width?: number;
   height?: number;
-  categoryId: string;
-  category: Category;
+  categoryId?: string;
+  category?: Category;
   brandId?: string;
   brand?: Brand;
   images: ProductImage[];
@@ -93,60 +95,97 @@ export interface Product {
     averageRating: number;
     totalReviews: number;
   };
-  totalStock?: number;
-  relatedProducts?: Product[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CartItem {
-  id: string;
-  variantId: string;
-  variant: ProductVariant;
-  productId: string;
-  product: Product;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-}
-
-export interface Coupon {
-  id: string;
-  code: string;
-  description?: string;
-  type: 'PERCENTAGE' | 'FIXED_AMOUNT';
-  value: number;
-  minSpend?: number;
-  maxDiscount?: number | null;
-  startDate: string;
-  endDate: string;
-  usageLimit?: number | null;
-  usedCount: number;
-  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Banner {
   id: string;
   title: string;
   subtitle?: string;
-  linkUrl?: string;
-  desktopImageUrl: string;
+  imageUrl?: string;
+  desktopImageUrl?: string;
   mobileImageUrl?: string;
+  linkUrl: string;
   buttonText?: string;
-  displayOrder: number;
+  isActive?: boolean;
+  displayOrder?: number;
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  statusCode: number;
-  message?: string;
-  data: T;
-  meta?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
+export interface Address {
+  id: string;
+  userId?: string;
+  streetAddress: string;
+  apartment?: string;
+  city: string;
+  state: string;
+  postalCode?: string;
+  country: string;
+  isDefault?: boolean;
+}
+
+export interface CartItem {
+  variantId: string;
+  productId: string;
+  productName: string;
+  productSlug: string;
+  title: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  imageUrl?: string | null;
+  maxStock: number;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description?: string;
+  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom: string;
+  validUntil: string;
+  usageLimit?: number;
+  timesUsed: number;
+  isActive: boolean;
+}
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  variantId: string;
+  productId: string;
+  sku: string;
+  title: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+  variant?: ProductVariant;
+  product?: Product;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  userId?: string;
+  guestEmail?: string;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestPhone?: string;
+  status: 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+  subtotal: number;
+  shippingCost: number;
+  taxAmount: number;
+  discountAmount: number;
+  total: number;
+  shippingAddress: any;
+  billingAddress?: any;
+  shippingMethod: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  items: OrderItem[];
+  createdAt: string;
+  updatedAt: string;
 }

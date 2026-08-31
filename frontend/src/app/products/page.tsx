@@ -7,16 +7,13 @@ import { TreintaCategoryPills } from '../../components/storefront/TreintaCategor
 import { TreintaProductCard } from '../../components/storefront/TreintaProductCard';
 import { TreintaLiveCart } from '../../components/storefront/TreintaLiveCart';
 import { TreintaVariantModal } from '../../components/storefront/TreintaVariantModal';
-import { Product, Category } from '../../types';
-import { api } from '../../lib/api';
+import { Product } from '../../types';
 import { PackageSearch, PlusCircle } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
-import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from '../../lib/mockData';
+import { useCatalog } from '../../lib/catalogStore';
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [loading, setLoading] = useState(false);
+  const { products, categories, loading } = useCatalog();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
@@ -25,46 +22,16 @@ export default function ProductsPage() {
 
   useEffect(() => {
     initCart();
-
-    Promise.all([
-      api.get('/products?limit=50').catch(() => null),
-      api.get('/categories').catch(() => null),
-    ])
-      .then(([prodRes, catRes]: any) => {
-        if (prodRes?.data && Array.isArray(prodRes.data) && prodRes.data.length > 0) {
-          const normalized = prodRes.data.map((p: any) => {
-            if (!p.variants || p.variants.length === 0) {
-              return {
-                ...p,
-                variants: [
-                  {
-                    id: `var-${p.id}`,
-                    sku: p.sku || `SKU-${p.id}`,
-                    title: 'Estándar',
-                    price: p.basePrice || 0,
-                    stock: 50,
-                    attributes: {},
-                  },
-                ],
-              };
-            }
-            return p;
-          });
-          setProducts(normalized);
-        }
-        if (catRes?.data && Array.isArray(catRes.data) && catRes.data.length > 0) {
-          setCategories(catRes.data);
-        }
-      })
-      .catch(() => {});
   }, [initCart]);
 
-  const filteredProducts = products.filter((p) => {
+  const activeProducts = products.filter((p) => (p as any).status !== 'DRAFT');
+
+  const filteredProducts = activeProducts.filter((p) => {
     const matchesSearch =
       searchTerm === '' ||
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      (p.category?.name && p.category.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesCategory =
       activeCategory === 'all' || p.category?.slug === activeCategory;
@@ -129,7 +96,7 @@ export default function ProductsPage() {
               <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-16 text-center shadow-subtle">
                 <PackageSearch className="h-10 w-10 text-[#777777] dark:text-[#A8ABB2] mb-3" />
                 <h3 className="text-sm font-bold text-[#353535] dark:text-[#F5F6F8]">No se encontraron productos</h3>
-                <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">Prueba cambiando los filtros.</p>
+                <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">Prueba cambiando los filtros o agrega uno nuevo.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
