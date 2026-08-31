@@ -14,5 +14,5 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000" ^| findstr "LISTENING
 echo ========================================================
 echo  Iniciando Wally Frontend en http://localhost:3000
 echo ========================================================
-call npm run start
+call npm run dev
 pause
