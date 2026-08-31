@@ -11,29 +11,53 @@ import { Product, Category } from '../../types';
 import { api } from '../../lib/api';
 import { PackageSearch, PlusCircle } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
+import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from '../../lib/mockData';
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
 
-  const { addItem } = useCartStore();
+  const { addItem, initCart } = useCartStore();
 
   useEffect(() => {
+    initCart();
+
     Promise.all([
-      api.get('/products?limit=50'),
-      api.get('/categories'),
+      api.get('/products?limit=50').catch(() => null),
+      api.get('/categories').catch(() => null),
     ])
       .then(([prodRes, catRes]: any) => {
-        if (prodRes?.data) setProducts(prodRes.data);
-        if (catRes?.data) setCategories(catRes.data);
+        if (prodRes?.data && Array.isArray(prodRes.data) && prodRes.data.length > 0) {
+          const normalized = prodRes.data.map((p: any) => {
+            if (!p.variants || p.variants.length === 0) {
+              return {
+                ...p,
+                variants: [
+                  {
+                    id: `var-${p.id}`,
+                    sku: p.sku || `SKU-${p.id}`,
+                    title: 'Estándar',
+                    price: p.basePrice || 0,
+                    stock: 50,
+                    attributes: {},
+                  },
+                ],
+              };
+            }
+            return p;
+          });
+          setProducts(normalized);
+        }
+        if (catRes?.data && Array.isArray(catRes.data) && catRes.data.length > 0) {
+          setCategories(catRes.data);
+        }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+      .catch(() => {});
+  }, [initCart]);
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
@@ -51,10 +75,10 @@ export default function ProductsPage() {
   const handleQuickAdd = (product: any) => {
     const defaultVariant = product.variants?.[0] || {
       id: `default-${product.id}`,
-      sku: product.sku,
+      sku: product.sku || `SKU-${product.id}`,
       title: 'Estándar',
-      price: product.basePrice,
-      stock: 10,
+      price: product.basePrice || 0,
+      stock: 50,
     };
     addItem(product, defaultVariant, 1);
   };
@@ -126,8 +150,8 @@ export default function ProductsPage() {
                   <TreintaProductCard
                     key={product.id}
                     product={product}
-                    onQuickAdd={() => handleQuickAdd(product)}
-                    onOpenVariants={() => handleOpenVariants(product)}
+                    onQuickAdd={handleQuickAdd}
+                    onOpenVariants={handleOpenVariants}
                   />
                 ))}
               </div>
