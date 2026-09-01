@@ -1,5 +1,6 @@
 import { CartItem } from '../types';
 import { formatCurrency } from './utils';
+import { getStoredOrders, saveOrdersStore, getStoredProducts, saveProductsCatalog } from './catalogStore';
 
 export const DEFAULT_WHATSAPP_NUMBER = '18299793111'; // Luxora Style WhatsApp: 829-979-3111
 
@@ -7,7 +8,6 @@ export function formatWhatsAppNumberForLink(phoneNumber: string): string {
   let cleaned = phoneNumber.replace(/[^0-9]/g, '');
   if (!cleaned) return DEFAULT_WHATSAPP_NUMBER;
 
-  // If 10 digits starting with Dominican area codes (809, 829, 849), prepend country code 1
   if (cleaned.length === 10 && (cleaned.startsWith('809') || cleaned.startsWith('829') || cleaned.startsWith('849'))) {
     cleaned = `1${cleaned}`;
   }
@@ -55,7 +55,9 @@ export function generateWhatsAppOrderMessage(
   total: number,
   discount: number = 0,
   couponCode?: string,
-  customerData?: { name?: string; phone?: string; address?: string; city?: string }
+  customerData?: { name?: string; phone?: string; address?: string; city?: string },
+  orderId?: string,
+  orderNumber?: string
 ): string {
   const dateStr = new Date().toLocaleDateString('es-DO', {
     year: 'numeric',
@@ -65,7 +67,13 @@ export function generateWhatsAppOrderMessage(
     minute: '2-digit',
   });
 
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+  const confirmationLink = `${baseUrl}/admin/orders/confirm?id=${orderId || 'ord-latest'}`;
+
   let message = `🛍️ *NUEVO PEDIDO - LUXORA STYLE*\n`;
+  if (orderNumber) {
+    message += `🔖 *Orden:* \`${orderNumber}\`\n`;
+  }
   message += `📅 _${dateStr}_\n\n`;
 
   if (customerData?.name) {
@@ -101,7 +109,11 @@ export function generateWhatsAppOrderMessage(
   message += `• Impuestos (18% ITBIS): ${formatCurrency(tax)}\n`;
   message += `• *TOTAL A PAGAR: ${formatCurrency(total)}*\n\n`;
 
-  message += `📍 *Hola Luxora Style, deseo confirmar y coordinar el pago y envío de este pedido.*`;
+  message += `📍 *Hola Luxora Style, deseo coordinar el pago y entrega de este pedido.*\n\n`;
+  message += `──────────────────────\n`;
+  message += `⚡ *PANEL DE CONTROL LUXORA (Admin):*\n`;
+  message += `🔗 *Link para Confirmar o Cancelar Venta:*\n`;
+  message += `👉 ${confirmationLink}`;
 
   return message;
 }
@@ -115,8 +127,54 @@ export function openWhatsAppOrder(
   discount: number = 0,
   couponCode?: string,
   customerData?: { name?: string; phone?: string; address?: string; city?: string }
-): void {
+): { orderId: string; orderNumber: string } {
   const number = getStoreWhatsAppNumber();
+  const timestamp = Date.now();
+  const orderId = `ord-${timestamp}`;
+  const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${timestamp.toString().slice(-4)}`;
+
+  // Save new order as PENDING_CONFIRMATION in local store immediately
+  try {
+    const existingOrders = getStoredOrders();
+    const newOrder = {
+      id: orderId,
+      orderNumber,
+      customerName: customerData?.name || 'Cliente WhatsApp',
+      email: customerData?.phone ? `${customerData.phone}@whatsapp.cliente` : 'cliente@luxorastyle.com',
+      phone: customerData?.phone || '',
+      itemsCount: items.reduce((acc, i) => acc + i.quantity, 0),
+      itemsDescription: items.map((i) => `${i.productName} (${i.title}) x${i.quantity}`).join(', '),
+      items: items.map((i) => ({
+        id: i.variantId,
+        variantId: i.variantId,
+        productId: i.productId,
+        productName: i.productName,
+        title: i.title,
+        sku: i.sku,
+        price: i.price,
+        quantity: i.quantity,
+        imageUrl: i.imageUrl,
+      })),
+      createdAt: new Date().toISOString(),
+      grandTotal: Number(total),
+      subtotal: Number(subtotal),
+      discount: Number(discount),
+      couponCode: couponCode || null,
+      shippingCost: Number(shippingCost),
+      tax: Number(tax),
+      paymentMethod: 'WhatsApp Directo / Transferencia',
+      paymentStatus: 'Pendiente de Confirmación',
+      status: 'PENDING_CONFIRMATION',
+      carrier: 'Envío Local',
+      trackingNumber: '',
+      shippingAddress: customerData?.address ? `${customerData.address}, ${customerData.city || ''}` : 'Entrega acordada por WhatsApp',
+    };
+
+    saveOrdersStore([newOrder, ...existingOrders]);
+  } catch (e) {
+    console.error('Error saving WhatsApp order:', e);
+  }
+
   const message = generateWhatsAppOrderMessage(
     items,
     subtotal,
@@ -125,7 +183,9 @@ export function openWhatsAppOrder(
     total,
     discount,
     couponCode,
-    customerData
+    customerData,
+    orderId,
+    orderNumber
   );
 
   const encodedMessage = encodeURIComponent(message);
@@ -134,4 +194,6 @@ export function openWhatsAppOrder(
   if (typeof window !== 'undefined') {
     window.open(whatsappUrl, '_blank');
   }
+
+  return { orderId, orderNumber };
 }

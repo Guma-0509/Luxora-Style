@@ -17,20 +17,46 @@ import {
   ArrowRight,
   Eye,
   Activity,
+  CheckCircle2,
+  Clock,
+  XCircle,
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   const { products } = useCatalog();
   const [orders, setOrders] = useState<any[]>([]);
 
-  useEffect(() => {
+  const loadOrders = () => {
     const loadedOrders = getStoredOrders();
     setOrders(loadedOrders);
+  };
+
+  useEffect(() => {
+    loadOrders();
+
+    const handleUpdate = () => {
+      loadOrders();
+    };
+
+    window.addEventListener('luxora_catalog_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('luxora_catalog_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   // Compute live metrics from actual data
   const metrics = useMemo(() => {
-    const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.grandTotal) || 0), 0);
+    // Only sum revenue from confirmed / paid orders!
+    const confirmedOrders = orders.filter(
+      (o) => o.status === 'PAID' || o.status === 'CONFIRMED' || o.status === 'SHIPPED' || o.status === 'DELIVERED',
+    );
+    const pendingOrders = orders.filter((o) => o.status === 'PENDING_CONFIRMATION' || o.status === 'PENDING' || !o.status);
+    const cancelledOrders = orders.filter((o) => o.status === 'CANCELLED');
+
+    const totalRevenue = confirmedOrders.reduce((sum, o) => sum + (Number(o.grandTotal) || 0), 0);
     const totalOrders = orders.length;
     const totalProducts = products.length;
 
@@ -39,10 +65,13 @@ export default function AdminDashboardPage() {
 
     return {
       totalRevenue,
+      confirmedCount: confirmedOrders.length,
+      pendingCount: pendingOrders.length,
+      cancelledCount: cancelledOrders.length,
       totalOrders,
       totalProducts,
       lowStockVariants,
-      recentOrders: orders.slice(0, 5),
+      recentOrders: orders.slice(0, 6),
     };
   }, [products, orders]);
 
@@ -55,7 +84,7 @@ export default function AdminDashboardPage() {
             Resumen General de Operaciones
           </h1>
           <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">
-            Supervisa en tiempo real ventas, ingresos netos, pedidos y control de inventario
+            Supervisa en tiempo real ventas, pedidos de WhatsApp, confirmaciones e inventario
           </p>
         </div>
 
@@ -69,6 +98,33 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Pending WhatsApp Orders Alert Banner if any */}
+      {metrics.pendingCount > 0 && (
+        <div className="rounded-3xl border border-amber-500/40 bg-amber-500/10 dark:bg-amber-500/15 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-subtle">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <strong className="text-sm font-black text-[#353535] dark:text-[#F5F6F8]">
+                Tienes {metrics.pendingCount} {metrics.pendingCount === 1 ? 'pedido de WhatsApp pendiente' : 'pedidos de WhatsApp pendientes'} de confirmación
+              </strong>
+              <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">
+                Haz clic para revisar y confirmar las ventas realizadas para sumarlas a tus ingresos.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/admin/orders/confirm"
+            className="inline-flex items-center gap-1.5 rounded-2xl bg-amber-500 hover:bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-subtle transition-all self-start sm:self-auto cursor-pointer"
+          >
+            <span>Confirmar Ventas</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
 
       {/* 2. Key Metrics Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -86,7 +142,7 @@ export default function AdminDashboardPage() {
             </span>
             <div className="flex items-center gap-1 text-[11px] font-bold text-[#777777] dark:text-[#A8ABB2] mt-1">
               <TrendingUp className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
-              <span>{metrics.totalOrders > 0 ? `${metrics.totalOrders} transacciones` : 'Sin ventas registradas'}</span>
+              <span>{metrics.confirmedCount > 0 ? `${metrics.confirmedCount} ventas confirmadas` : 'Sin ventas confirmadas'}</span>
             </div>
           </div>
         </div>
@@ -94,7 +150,7 @@ export default function AdminDashboardPage() {
         {/* Metric 2: Total Orders */}
         <div className="rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 shadow-subtle space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#777777] dark:text-[#A8ABB2] uppercase tracking-wider">Pedidos Procesados</span>
+            <span className="text-xs font-bold text-[#777777] dark:text-[#A8ABB2] uppercase tracking-wider">Pedidos Totales</span>
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#284B63]/10 dark:bg-[#3C6E71]/20 text-[#284B63] dark:text-[#4D8B8E]">
               <ShoppingCart className="h-5 w-5" />
             </div>
@@ -104,7 +160,7 @@ export default function AdminDashboardPage() {
               {metrics.totalOrders}
             </span>
             <div className="flex items-center gap-1 text-[11px] font-bold text-[#777777] dark:text-[#A8ABB2] mt-1">
-              <span>{metrics.totalOrders > 0 ? 'Historial activo' : '0 pedidos completados'}</span>
+              <span>{metrics.pendingCount > 0 ? `${metrics.pendingCount} pendientes` : '0 pendientes'}</span>
             </div>
           </div>
         </div>
@@ -161,7 +217,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-4">
             <div>
               <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">Rendimiento Semanal de Ventas</h3>
-              <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">Facturación acumulada por día</p>
+              <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">Facturación acumulada de ventas confirmadas</p>
             </div>
             <span className="rounded-full bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-3 py-1 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E]">
               Esta Semana
@@ -170,11 +226,11 @@ export default function AdminDashboardPage() {
 
           <div className="flex items-end justify-between gap-3 h-48 pt-6 px-2">
             {[
-              { day: 'Lun', amount: orders.length > 0 ? metrics.totalRevenue * 0.15 : 0, height: orders.length > 0 ? '30%' : '8%' },
-              { day: 'Mar', amount: orders.length > 0 ? metrics.totalRevenue * 0.20 : 0, height: orders.length > 0 ? '45%' : '8%' },
-              { day: 'Mié', amount: orders.length > 0 ? metrics.totalRevenue * 0.10 : 0, height: orders.length > 0 ? '25%' : '8%' },
-              { day: 'Jue', amount: orders.length > 0 ? metrics.totalRevenue * 0.25 : 0, height: orders.length > 0 ? '60%' : '8%' },
-              { day: 'Vie', amount: orders.length > 0 ? metrics.totalRevenue * 0.30 : 0, height: orders.length > 0 ? '75%' : '8%' },
+              { day: 'Lun', amount: metrics.confirmedCount > 0 ? metrics.totalRevenue * 0.15 : 0, height: metrics.confirmedCount > 0 ? '30%' : '8%' },
+              { day: 'Mar', amount: metrics.confirmedCount > 0 ? metrics.totalRevenue * 0.20 : 0, height: metrics.confirmedCount > 0 ? '45%' : '8%' },
+              { day: 'Mié', amount: metrics.confirmedCount > 0 ? metrics.totalRevenue * 0.10 : 0, height: metrics.confirmedCount > 0 ? '25%' : '8%' },
+              { day: 'Jue', amount: metrics.confirmedCount > 0 ? metrics.totalRevenue * 0.25 : 0, height: metrics.confirmedCount > 0 ? '60%' : '8%' },
+              { day: 'Vie', amount: metrics.confirmedCount > 0 ? metrics.totalRevenue * 0.30 : 0, height: metrics.confirmedCount > 0 ? '75%' : '8%' },
               { day: 'Sáb', amount: 0, height: '8%' },
               { day: 'Dom', amount: 0, height: '8%' },
             ].map((bar, idx) => (
@@ -211,35 +267,54 @@ export default function AdminDashboardPage() {
               <div className="py-8 text-center text-xs text-[#777777] dark:text-[#A8ABB2] space-y-1">
                 <ShoppingCart className="h-6 w-6 mx-auto opacity-40 text-[#777777]" />
                 <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">Sin pedidos recientes</p>
-                <p className="text-[11px]">Las nuevas compras aparecerán aquí automáticamente.</p>
+                <p className="text-[11px]">Las nuevas compras por WhatsApp aparecerán aquí automáticamente.</p>
               </div>
             ) : (
-              metrics.recentOrders.map((ord: any) => (
-                <div key={ord.id} className="pt-3 first:pt-0 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-[#353535] dark:text-[#F5F6F8]">{ord.customerName}</p>
-                    <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] font-mono">{ord.orderNumber}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-right">
-                      <p className="text-xs font-black text-[#353535] dark:text-[#F5F6F8] font-mono">
-                        {formatCurrency(ord.grandTotal)}
-                      </p>
-                      <span className="inline-block rounded-full bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-2 py-0.5 text-[9px] font-bold text-[#3C6E71] dark:text-[#4D8B8E]">
-                        {ord.status}
-                      </span>
+              metrics.recentOrders.map((ord: any) => {
+                const isPaid = ord.status === 'PAID' || ord.status === 'SHIPPED' || ord.status === 'DELIVERED';
+                const isCancel = ord.status === 'CANCELLED';
+                const isPending = !isPaid && !isCancel;
+
+                return (
+                  <div key={ord.id} className="pt-3 first:pt-0 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-[#353535] dark:text-[#F5F6F8] line-clamp-1">{ord.customerName}</p>
+                      <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] font-mono">{ord.orderNumber}</span>
                     </div>
-                    <Link
-                      href="/admin/dashboard/orders"
-                      className="inline-flex items-center gap-1 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2 py-1 text-[11px] font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E]"
-                      title="Ver orden"
-                    >
-                      <Eye className="h-3 w-3" />
-                      <span>Ver</span>
-                    </Link>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="text-right">
+                        <p className="text-xs font-black text-[#353535] dark:text-[#F5F6F8] font-mono">
+                          {formatCurrency(ord.grandTotal)}
+                        </p>
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                            isPaid
+                              ? 'bg-[#3C6E71]/15 text-[#3C6E71] dark:text-[#4D8B8E] border border-[#3C6E71]/30'
+                              : isCancel
+                              ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30'
+                              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                          }`}
+                        >
+                          {isPaid ? 'CONFIRMADO' : isCancel ? 'CANCELADO' : 'PENDIENTE'}
+                        </span>
+                      </div>
+
+                      <Link
+                        href={`/admin/orders/confirm?id=${ord.id}`}
+                        className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-[11px] font-bold transition-all shadow-subtle ${
+                          isPending
+                            ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                            : 'border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71]'
+                        }`}
+                        title="Confirmar o ver orden"
+                      >
+                        {isPending ? <Clock className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        <span>{isPending ? 'Confirmar' : 'Ver'}</span>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

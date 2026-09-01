@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { api } from '../../../../lib/api';
 import { formatCurrency, formatDate } from '../../../../lib/utils';
 import {
@@ -16,6 +17,7 @@ import {
   Package,
   CheckCircle2,
   AlertTriangle,
+  Clock,
 } from 'lucide-react';
 
 import { getStoredOrders, saveOrdersStore, deleteAllOrdersStore } from '../../../../lib/catalogStore';
@@ -37,15 +39,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     const local = getStoredOrders();
-    if (typeof window !== 'undefined' && localStorage.getItem('luxora_orders_initialized')) {
-      setOrders(local);
-    } else {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('luxora_orders_initialized', 'true');
-        saveOrdersStore(INITIAL_ORDERS);
-      }
-      setOrders(INITIAL_ORDERS);
-    }
+    setOrders(local);
   }, []);
 
   const handleOpenView = (ord: any) => {
@@ -97,13 +91,14 @@ export default function AdminOrdersPage() {
         })
         .catch(() => {});
 
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === selectedOrderForEdit.id
-            ? { ...o, status: newStatus, trackingNumber, carrier }
-            : o,
-        ),
+      const updated = orders.map((o) =>
+        o.id === selectedOrderForEdit.id
+          ? { ...o, status: newStatus, trackingNumber, carrier }
+          : o,
       );
+
+      setOrders(updated);
+      saveOrdersStore(updated);
 
       setNotification({
         message: `Orden ${selectedOrderForEdit.orderNumber} actualizada a estado: ${newStatus}`,
@@ -120,7 +115,7 @@ export default function AdminOrdersPage() {
     const matchesSearch =
       o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
       o.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      o.email.toLowerCase().includes(search.toLowerCase());
+      (o.email && o.email.toLowerCase().includes(search.toLowerCase()));
 
     const matchesStatus = statusFilter === 'ALL' || o.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -136,7 +131,7 @@ export default function AdminOrdersPage() {
             Gestión de Pedidos & Ventas
           </h1>
           <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">
-            Supervisa compras, clientes, estados de envío y números de seguimiento
+            Supervisa compras, pedidos de WhatsApp, confirmaciones de venta y envíos
           </p>
         </div>
 
@@ -195,11 +190,12 @@ export default function AdminOrdersPage() {
             className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3 py-2 text-xs text-[#353535] dark:text-[#F5F6F8] font-bold focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
           >
             <option value="ALL">Todos los Estados</option>
-            <option value="PAID">Pagados</option>
+            <option value="PENDING_CONFIRMATION">Pendientes de Confirmación (WhatsApp)</option>
+            <option value="PAID">Pagados / Confirmados</option>
             <option value="PROCESSING">En Proceso</option>
             <option value="SHIPPED">Enviados</option>
             <option value="DELIVERED">Entregados</option>
-            <option value="CANCELLED">Cancelados</option>
+            <option value="CANCELLED">Cancelados / No Concretados</option>
           </select>
         </div>
       </div>
@@ -226,77 +222,103 @@ export default function AdminOrdersPage() {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <ShoppingCart className="h-8 w-8 text-[#777777] opacity-40" />
                       <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">No hay pedidos registrados</p>
-                      <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Los pedidos completados aparecerán listados aquí.</p>
+                      <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Los pedidos enviados por WhatsApp o completados aparecerán aquí.</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((ord) => (
-                  <tr key={ord.id} className="hover:bg-[#D9D9D9]/15 dark:hover:bg-[#2E3236]/40 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <span className="font-mono font-bold text-[#353535] dark:text-[#F5F6F8] block">{ord.orderNumber}</span>
-                      {ord.trackingNumber ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-[#3C6E71] dark:text-[#4D8B8E] font-mono mt-0.5">
-                          <Truck className="h-3 w-3" /> {ord.carrier}: {ord.trackingNumber}
+                filteredOrders.map((ord) => {
+                  const isPending = ord.status === 'PENDING_CONFIRMATION' || ord.status === 'PENDING';
+                  const isPaid = ord.status === 'PAID' || ord.status === 'SHIPPED' || ord.status === 'DELIVERED';
+                  const isCancel = ord.status === 'CANCELLED';
+
+                  return (
+                    <tr key={ord.id} className="hover:bg-[#D9D9D9]/15 dark:hover:bg-[#2E3236]/40 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono font-bold text-[#353535] dark:text-[#F5F6F8] block">{ord.orderNumber}</span>
+                        {ord.trackingNumber ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-[#3C6E71] dark:text-[#4D8B8E] font-mono mt-0.5">
+                            <Truck className="h-3 w-3" /> {ord.carrier}: {ord.trackingNumber}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">Sin guía asignada</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">{ord.customerName}</p>
+                        <p className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">{ord.email || ord.phone}</p>
+                      </td>
+                      <td className="py-3.5 px-4 text-[#777777] dark:text-[#A8ABB2] font-mono text-[11px]">
+                        {formatDate(ord.createdAt)}
+                      </td>
+                      <td className="py-3.5 px-4 font-black text-[#353535] dark:text-[#F5F6F8] font-mono">
+                        {formatCurrency(ord.grandTotal)}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-semibold text-[#353535] dark:text-[#F5F6F8] block">{ord.paymentMethod}</span>
+                        <span className="text-[10px] font-bold text-[#3C6E71] dark:text-[#4D8B8E]">{ord.paymentStatus}</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+                            isPaid
+                              ? 'bg-[#3C6E71]/15 text-[#3C6E71] dark:text-[#4D8B8E] border-[#3C6E71]/30'
+                              : isCancel
+                              ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30'
+                              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                          }`}
+                        >
+                          {ord.status}
                         </span>
-                      ) : (
-                        <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">Sin guía asignada</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">{ord.customerName}</p>
-                      <p className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">{ord.email}</p>
-                    </td>
-                    <td className="py-3.5 px-4 text-[#777777] dark:text-[#A8ABB2] font-mono text-[11px]">
-                      {formatDate(ord.createdAt)}
-                    </td>
-                    <td className="py-3.5 px-4 font-black text-[#353535] dark:text-[#F5F6F8] font-mono">
-                      {formatCurrency(ord.grandTotal)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="font-semibold text-[#353535] dark:text-[#F5F6F8] block">{ord.paymentMethod}</span>
-                      <span className="text-[10px] font-bold text-[#3C6E71] dark:text-[#4D8B8E]">{ord.paymentStatus}</span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="inline-block rounded-full bg-[#3C6E71]/15 dark:bg-[#4D8B8E]/20 text-[#3C6E71] dark:text-[#4D8B8E] border border-[#3C6E71]/30 px-2.5 py-0.5 text-[10px] font-bold">
-                        {ord.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                        {/* VER */}
-                        <button
-                          onClick={() => handleOpenView(ord)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2.5 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-all shadow-subtle cursor-pointer"
-                          title="Ver Detalle"
-                        >
-                          <Eye className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
-                          <span>Ver</span>
-                        </button>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {/* CONFIRMAR (Solo si está pendiente) */}
+                          {isPending && (
+                            <Link
+                              href={`/admin/orders/confirm?id=${ord.id}`}
+                              className="inline-flex items-center gap-1 rounded-xl bg-amber-500 hover:bg-amber-600 px-2.5 py-1.5 text-xs font-bold text-white transition-all shadow-subtle cursor-pointer"
+                              title="Confirmar Venta"
+                            >
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>Confirmar</span>
+                            </Link>
+                          )}
 
-                        {/* EDITAR */}
-                        <button
-                          onClick={() => handleOpenEdit(ord)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#3C6E71]/40 dark:border-[#4D8B8E]/40 bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-2.5 py-1.5 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] hover:bg-[#3C6E71] hover:text-white dark:hover:bg-[#4D8B8E] dark:hover:text-white transition-all shadow-subtle cursor-pointer"
-                          title="Editar Pedido"
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                          <span>Editar</span>
-                        </button>
+                          {/* VER */}
+                          <button
+                            onClick={() => handleOpenView(ord)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2.5 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-all shadow-subtle cursor-pointer"
+                            title="Ver Detalle"
+                          >
+                            <Eye className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                            <span>Ver</span>
+                          </button>
 
-                        {/* BORRAR */}
-                        <button
-                          onClick={() => setOrderToDelete(ord)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
-                          title="Eliminar Pedido"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span>Borrar</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          {/* EDITAR */}
+                          <button
+                            onClick={() => handleOpenEdit(ord)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#3C6E71]/40 dark:border-[#4D8B8E]/40 bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-2.5 py-1.5 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] hover:bg-[#3C6E71] hover:text-white dark:hover:bg-[#4D8B8E] dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                            title="Editar Pedido"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                            <span>Editar</span>
+                          </button>
+
+                          {/* BORRAR */}
+                          <button
+                            onClick={() => setOrderToDelete(ord)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                            title="Eliminar Pedido"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Borrar</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -327,7 +349,7 @@ export default function AdminOrdersPage() {
 
             <div className="p-3.5 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
               <strong className="text-sm font-black text-[#353535] dark:text-[#F5F6F8]">{orderToDelete.orderNumber}</strong>
-              <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-0.5">Cliente: {orderToDelete.customerName} ({orderToDelete.email})</p>
+              <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-0.5">Cliente: {orderToDelete.customerName}</p>
               <p className="text-xs font-mono font-bold text-[#3C6E71] dark:text-[#4D8B8E] mt-1">Total: {formatCurrency(orderToDelete.grandTotal)}</p>
             </div>
 
@@ -445,17 +467,25 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className="flex justify-between items-center p-3 rounded-2xl bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 border border-[#3C6E71]/30">
-                <span className="font-bold text-[#353535] dark:text-[#F5F6F8]">Total Pagado:</span>
+                <span className="font-bold text-[#353535] dark:text-[#F5F6F8]">Total:</span>
                 <span className="font-mono font-black text-base text-[#3C6E71] dark:text-[#4D8B8E]">
                   {formatCurrency(selectedOrderForView.grandTotal)}
                 </span>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C] flex justify-end">
+            <div className="pt-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C] flex items-center justify-between">
+              {selectedOrderForView.status === 'PENDING_CONFIRMATION' && (
+                <Link
+                  href={`/admin/orders/confirm?id=${selectedOrderForView.id}`}
+                  className="rounded-2xl bg-amber-500 hover:bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-subtle"
+                >
+                  Ir a Confirmar Venta
+                </Link>
+              )}
               <button
                 onClick={() => setSelectedOrderForView(null)}
-                className="rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] px-5 py-2.5 text-xs font-bold text-white shadow-subtle cursor-pointer"
+                className="rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] px-5 py-2 text-xs font-bold text-white shadow-subtle cursor-pointer ml-auto"
               >
                 Cerrar
               </button>
@@ -494,7 +524,8 @@ export default function AdminOrdersPage() {
                   onChange={(e) => setNewStatus(e.target.value)}
                   className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] p-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                 >
-                  <option value="PAID">PAID (Pagado)</option>
+                  <option value="PENDING_CONFIRMATION">PENDING_CONFIRMATION (Pendiente WhatsApp)</option>
+                  <option value="PAID">PAID (Pagado / Confirmado)</option>
                   <option value="PROCESSING">PROCESSING (En Preparación / Empaque)</option>
                   <option value="SHIPPED">SHIPPED (Despachado con Guía)</option>
                   <option value="DELIVERED">DELIVERED (Entregado al Cliente)</option>
