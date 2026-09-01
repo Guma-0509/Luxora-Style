@@ -10,6 +10,7 @@ import {
   openWhatsAppOrder,
   getStoreWhatsAppNumber,
   setStoreWhatsAppNumber,
+  formatWhatsAppNumberDisplay,
 } from '../../lib/whatsapp';
 import { WhatsAppFilledIcon } from '../../components/common/WhatsAppIcon';
 import {
@@ -45,7 +46,7 @@ export default function CartPage() {
 
   // WhatsApp number configuration modal
   const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
-  const [whatsAppNumber, setWhatsAppNumberState] = useState('18095550199');
+  const [whatsAppNumber, setWhatsAppNumberState] = useState('18299793111');
   const [phoneNotification, setPhoneNotification] = useState<string | null>(null);
 
   useEffect(() => {
@@ -130,7 +131,7 @@ export default function CartPage() {
             className="inline-flex items-center gap-1.5 rounded-full border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] px-3 py-1 text-[11px] font-bold text-[#777777] dark:text-[#A8ABB2] hover:text-[#353535] dark:hover:text-[#F5F6F8] transition-colors cursor-pointer"
           >
             <WhatsAppFilledIcon className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
-            <span>WhatsApp: +{whatsAppNumber}</span>
+            <span>WhatsApp: {formatWhatsAppNumberDisplay(whatsAppNumber)}</span>
             <Settings2 className="h-3 w-3 ml-0.5" />
           </button>
         </nav>

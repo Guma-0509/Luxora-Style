@@ -1,14 +1,37 @@
 import { CartItem } from '../types';
 import { formatCurrency } from './utils';
 
-export const DEFAULT_WHATSAPP_NUMBER = '18095550199'; // Default store WhatsApp number
+export const DEFAULT_WHATSAPP_NUMBER = '18299793111'; // Luxora Style WhatsApp: 829-979-3111
+
+export function formatWhatsAppNumberForLink(phoneNumber: string): string {
+  let cleaned = phoneNumber.replace(/[^0-9]/g, '');
+  if (!cleaned) return DEFAULT_WHATSAPP_NUMBER;
+
+  // If 10 digits starting with Dominican area codes (809, 829, 849), prepend country code 1
+  if (cleaned.length === 10 && (cleaned.startsWith('809') || cleaned.startsWith('829') || cleaned.startsWith('849'))) {
+    cleaned = `1${cleaned}`;
+  }
+
+  return cleaned;
+}
+
+export function formatWhatsAppNumberDisplay(phoneNumber: string): string {
+  const cleaned = formatWhatsAppNumberForLink(phoneNumber);
+  if (cleaned.length === 11 && cleaned.startsWith('1')) {
+    return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+  }
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  }
+  return `+${cleaned}`;
+}
 
 export function getStoreWhatsAppNumber(): string {
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem('luxora_whatsapp_number');
       if (saved && saved.trim()) {
-        return saved.replace(/[^0-9]/g, '');
+        return formatWhatsAppNumberForLink(saved);
       }
     } catch (e) {}
   }
@@ -18,7 +41,8 @@ export function getStoreWhatsAppNumber(): string {
 export function setStoreWhatsAppNumber(phoneNumber: string): void {
   if (typeof window !== 'undefined') {
     try {
-      localStorage.setItem('luxora_whatsapp_number', phoneNumber.replace(/[^0-9]/g, ''));
+      const formatted = formatWhatsAppNumberForLink(phoneNumber);
+      localStorage.setItem('luxora_whatsapp_number', formatted);
     } catch (e) {}
   }
 }
