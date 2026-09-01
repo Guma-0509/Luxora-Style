@@ -184,11 +184,23 @@ export function saveProductToCatalog(productData: Partial<Product> & { categoryN
 // Delete product from catalog
 export function deleteProductFromCatalog(productId: string): Product[] {
   const current = getStoredProducts();
-  const updated = current.filter((p) => p.id !== productId);
+  const updated = current.filter((p) => p.id !== productId && p.sku !== productId && p.slug !== productId);
   saveProductsCatalog(updated);
 
   api.delete(`/products/${productId}`).catch(() => {});
   api.delete(`/admin/products/${productId}`).catch(() => {});
+
+  return updated;
+}
+
+// Delete category from catalog
+export function deleteCategoryFromCatalog(categoryId: string): Category[] {
+  const current = getStoredCategories();
+  const updated = current.filter((c) => c.id !== categoryId && c.slug !== categoryId);
+  saveCategoriesCatalog(updated);
+
+  api.delete(`/categories/${categoryId}`).catch(() => {});
+  api.delete(`/admin/categories/${categoryId}`).catch(() => {});
 
   return updated;
 }
@@ -322,12 +334,19 @@ export function useCatalog() {
     return updated;
   }, []);
 
+  const removeCategory = useCallback((categoryId: string) => {
+    const updated = deleteCategoryFromCatalog(categoryId);
+    setCategories(updated);
+    return updated;
+  }, []);
+
   return {
     products,
     categories,
     loading,
     addOrUpdateProduct,
     removeProduct,
+    removeCategory,
     toggleStatus,
     refreshCatalog: loadData,
   };

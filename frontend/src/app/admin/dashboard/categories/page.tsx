@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Category } from '../../../../types';
-import { useCatalog, saveCategoriesCatalog, getStoredCategories } from '../../../../lib/catalogStore';
+import { useCatalog, saveCategoriesCatalog, getStoredCategories, deleteCategoryFromCatalog } from '../../../../lib/catalogStore';
 import {
   FolderTree,
   Plus,
@@ -21,10 +21,11 @@ import {
 } from 'lucide-react';
 
 export default function AdminCategoriesPage() {
-  const { categories, refreshCatalog } = useCatalog();
+  const { categories, refreshCatalog, removeCategory } = useCatalog();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [formData, setFormData] = useState({
@@ -32,7 +33,6 @@ export default function AdminCategoriesPage() {
     slug: '',
     description: '',
     imageUrl: '',
-    parentId: '',
   });
 
   const handleOpenCreateModal = () => {
@@ -42,7 +42,6 @@ export default function AdminCategoriesPage() {
       slug: '',
       description: '',
       imageUrl: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=400',
-      parentId: '',
     });
     setIsModalOpen(true);
   };
@@ -54,26 +53,20 @@ export default function AdminCategoriesPage() {
       slug: cat.slug,
       description: cat.description || '',
       imageUrl: cat.imageUrl || '',
-      parentId: cat.parentId || '',
     });
     setIsModalOpen(true);
   };
 
   const handleNameChange = (name: string) => {
-    const generatedSlug = name
+    const slug = name
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-');
-
-    setFormData((prev) => ({
-      ...prev,
-      name,
-      slug: editingCategory ? prev.slug : generatedSlug,
-    }));
+    setFormData((prev) => ({ ...prev, name, slug: editingCategory ? prev.slug : slug }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSaveCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.slug.trim()) return;
 
@@ -81,7 +74,15 @@ export default function AdminCategoriesPage() {
 
     if (editingCategory) {
       const updated = current.map((c) =>
-        c.id === editingCategory.id ? { ...c, ...formData } : c
+        c.id === editingCategory.id
+          ? {
+              ...c,
+              name: formData.name.trim(),
+              slug: formData.slug.trim(),
+              description: formData.description.trim(),
+              imageUrl: formData.imageUrl.trim() || c.imageUrl,
+            }
+          : c,
       );
       saveCategoriesCatalog(updated);
       refreshCatalog();
@@ -102,12 +103,18 @@ export default function AdminCategoriesPage() {
     setIsModalOpen(false);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar la categoría "${name}"?`)) return;
-    const current = getStoredCategories();
-    const updated = current.filter((c) => c.id !== id);
-    saveCategoriesCatalog(updated);
+  const handleConfirmDelete = () => {
+    if (!categoryToDelete) return;
+    const name = categoryToDelete.name;
+    const id = categoryToDelete.id;
+
+    if (removeCategory) {
+      removeCategory(id);
+    }
+    deleteCategoryFromCatalog(id);
     refreshCatalog();
+
+    setCategoryToDelete(null);
     showNotification(`Categoría "${name}" eliminada correctamente`, 'success');
   };
 
@@ -165,7 +172,7 @@ export default function AdminCategoriesPage() {
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Buscar por nombre, slug o descripción..."
+            placeholder="Buscar por nombre de categoría..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 pl-10 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
@@ -248,7 +255,7 @@ export default function AdminCategoriesPage() {
                           <span>Editar</span>
                         </button>
                         <button
-                          onClick={() => handleDelete(cat.id, cat.name)}
+                          onClick={() => setCategoryToDelete(cat)}
                           className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
                           title="Borrar Categoría"
                         >
@@ -265,75 +272,119 @@ export default function AdminCategoriesPage() {
         </div>
       </div>
 
-      {/* 5. Create / Edit Category Modal */}
-      {isModalOpen && (
+      {/* 5. DELETE CATEGORY CONFIRMATION MODAL */}
+      {categoryToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
-          <div className="w-full max-w-lg rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
             <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
-              <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] flex items-center gap-2">
-                <Layers className="h-5 w-5 text-[#3C6E71] dark:text-[#4D8B8E]" />
-                {editingCategory ? 'Editar Categoría' : 'Nueva Categoría en Catálogo'}
-              </h3>
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Eliminar Categoría?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:text-[#353535] dark:hover:text-[#F5F6F8] cursor-pointer"
+                onClick={() => setCategoryToDelete(null)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="p-3.5 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <strong className="text-sm font-black text-[#353535] dark:text-[#F5F6F8]">{categoryToDelete.name}</strong>
+              <p className="text-xs font-mono text-[#777777] dark:text-[#A8ABB2] mt-0.5">/{categoryToDelete.slug}</p>
+            </div>
+
+            <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">
+              ¿Estás seguro de que deseas eliminar la categoría &quot;{categoryToDelete.name}&quot;?
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setCategoryToDelete(null)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Sí, Eliminar Categoría</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. CREATE / EDIT CATEGORY MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-lg rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] flex items-center gap-2">
+                <FolderTree className="h-5 w-5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                {editingCategory ? 'Editar Categoría' : 'Nueva Categoría'}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
-                  Nombre de Categoría *
-                </label>
+                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Nombre de Categoría *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Ej. Calzado Deportivo"
-                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
+                  placeholder="Ej. Relojes & Accesorios"
+                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
-                  Slug URL *
-                </label>
+                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Slug URL (Identificador) *</label>
                 <input
                   type="text"
                   required
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="ej. calzado-deportivo"
-                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 font-mono text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
+                  placeholder="relojes-accesorios"
+                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 font-mono text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
-                  Descripción
-                </label>
+                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Descripción Breve</label>
                 <textarea
                   rows={2}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Breve descripción para SEO y filtrado..."
-                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] p-3 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
+                  placeholder="Colección exclusiva para amantes de la moda y estilo urbano..."
+                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
-                  URL Imagen de Portada
-                </label>
+                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">URL de Imagen Representativa</label>
                 <input
                   type="url"
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                   placeholder="https://images.unsplash.com/..."
-                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
+                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                 />
               </div>
 

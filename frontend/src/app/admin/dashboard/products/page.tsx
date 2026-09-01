@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { formatCurrency } from '../../../../lib/utils';
-import { useCatalog } from '../../../../lib/catalogStore';
+import { useCatalog, deleteProductFromCatalog } from '../../../../lib/catalogStore';
 import { Product } from '../../../../types';
 import {
   Package,
@@ -22,13 +22,15 @@ import {
   CheckCircle2,
   Layers,
   Store,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
-  const { products, categories, addOrUpdateProduct, removeProduct, toggleStatus } = useCatalog();
+  const { products, categories, addOrUpdateProduct, removeProduct, toggleStatus, refreshCatalog } = useCatalog();
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [productToDelete, setProductToDelete] = useState<any | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [formData, setFormData] = useState({
@@ -66,23 +68,16 @@ export default function AdminProductsPage() {
   const handleOpenEdit = (prod: any) => {
     setEditingProduct(prod);
 
-    // Extract sizes and colors from existing variants
-    const sizeSet = new Set<string>();
-    const colorSet = new Set<string>();
+    // Extract sizes and colors from variants
+    const sizes = Array.from(
+      new Set((prod.variants || []).map((v: any) => v.attributes?.Talla || v.attributes?.Size || '').filter(Boolean)),
+    ).join(', ');
 
-    (prod.variants || []).forEach((v: any) => {
-      if (v.attributes) {
-        Object.entries(v.attributes).forEach(([k, val]) => {
-          if (k.toLowerCase().includes('tal') || k.toLowerCase().includes('siz')) sizeSet.add(String(val));
-          if (k.toLowerCase().includes('col')) colorSet.add(String(val));
-        });
-      }
-      if (v.title && v.title.includes('/')) {
-        const parts = v.title.split('/').map((p: string) => p.trim());
-        if (parts[0]) colorSet.add(parts[0]);
-        if (parts[1]) sizeSet.add(parts[1].replace(/talla/i, '').trim());
-      }
-    });
+    const colors = Array.from(
+      new Set((prod.variants || []).map((v: any) => v.attributes?.Color || '').filter(Boolean)),
+    ).join(', ');
+
+    const totalStock = (prod.variants || []).reduce((acc: number, v: any) => acc + (v.stock || 0), 0);
 
     setFormData({
       name: prod.name,
@@ -92,57 +87,74 @@ export default function AdminProductsPage() {
       basePrice: prod.basePrice,
       compareAtPrice: prod.compareAtPrice || 0,
       imageUrl: prod.images?.[0]?.url || '',
-      stock: prod.variants?.[0]?.stock || 20,
-      sizes: Array.from(sizeSet).join(', ') || 'Única',
-      colors: Array.from(colorSet).join(', ') || 'Original',
+      stock: totalStock || 25,
+      sizes: sizes || 'S, M, L, XL',
+      colors: colors || 'Negro, Blanco',
       description: prod.description || '',
     });
     setIsModalOpen(true);
   };
 
-  const handleSaveProduct = async (e: React.FormEvent) => {
+  const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.sku.trim()) return;
 
-    // Build variants array from sizes and colors
-    const sizesArr = formData.sizes.split(',').map((s) => s.trim()).filter(Boolean);
-    const colorsArr = formData.colors.split(',').map((c) => c.trim()).filter(Boolean);
+    if (!formData.name.trim() || !formData.sku.trim() || formData.basePrice <= 0) {
+      showNotification('Por favor completa todos los campos requeridos correctamente.', 'error');
+      return;
+    }
+
+    // Split sizes & colors
+    const sizeList = formData.sizes
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const colorList = formData.colors
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
 
     const generatedVariants: any[] = [];
-    const baseSku = formData.sku.toUpperCase();
+    const baseStockPerVariant = Math.max(1, Math.floor(Number(formData.stock) / Math.max(1, sizeList.length * (colorList.length || 1))));
 
-    if (sizesArr.length > 0 && colorsArr.length > 0) {
-      colorsArr.forEach((col) => {
-        sizesArr.forEach((sz) => {
+    if (sizeList.length > 0 && colorList.length > 0) {
+      sizeList.forEach((size) => {
+        colorList.forEach((color) => {
           generatedVariants.push({
-            id: `var-${Date.now()}-${col}-${sz}`,
-            sku: `${baseSku}-${col.slice(0, 3).toUpperCase()}-${sz.replace(/\s+/g, '')}`,
-            title: `${col} / Talla ${sz}`,
+            id: `var-${Date.now()}-${size}-${color}`.toLowerCase().replace(/\s+/g, '-'),
+            sku: `${formData.sku}-${size}-${color}`.toUpperCase().replace(/\s+/g, ''),
+            title: `Talla: ${size} | Color: ${color}`,
             price: Number(formData.basePrice),
-            stock: Math.max(1, Math.round(Number(formData.stock) / (colorsArr.length * sizesArr.length))),
-            attributes: { Color: col, Talla: sz },
+            stock: baseStockPerVariant,
+            attributes: {
+              Talla: size,
+              Color: color,
+            },
           });
         });
       });
-    } else if (sizesArr.length > 0) {
-      sizesArr.forEach((sz) => {
+    } else if (sizeList.length > 0) {
+      sizeList.forEach((size) => {
         generatedVariants.push({
-          id: `var-${Date.now()}-${sz}`,
-          sku: `${baseSku}-${sz.replace(/\s+/g, '')}`,
-          title: `Talla ${sz}`,
+          id: `var-${Date.now()}-${size}`.toLowerCase().replace(/\s+/g, '-'),
+          sku: `${formData.sku}-${size}`.toUpperCase().replace(/\s+/g, ''),
+          title: `Talla: ${size}`,
           price: Number(formData.basePrice),
-          stock: Math.max(1, Math.round(Number(formData.stock) / sizesArr.length)),
-          attributes: { Talla: sz },
+          stock: baseStockPerVariant,
+          attributes: {
+            Talla: size,
+          },
         });
       });
     } else {
       generatedVariants.push({
         id: `var-${Date.now()}-std`,
-        sku: `${baseSku}-STD`,
+        sku: `${formData.sku}-STD`.toUpperCase(),
         title: 'Estándar',
         price: Number(formData.basePrice),
         stock: Number(formData.stock),
-        attributes: { Opción: 'Estándar' },
+        attributes: {
+          Opción: 'Estándar',
+        },
       });
     }
 
@@ -190,9 +202,17 @@ export default function AdminProductsPage() {
     showNotification('Estado del producto actualizado', 'success');
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (!confirm(`¿Deseas eliminar "${name}" del catálogo?`)) return;
+  const handleConfirmDelete = () => {
+    if (!productToDelete) return;
+    const name = productToDelete.name;
+    const id = productToDelete.id;
+
+    // Delete through both store helper and hook to guarantee removal
     removeProduct(id);
+    deleteProductFromCatalog(id);
+    refreshCatalog();
+
+    setProductToDelete(null);
     showNotification(`Producto "${name}" eliminado del catálogo`, 'success');
   };
 
@@ -250,12 +270,16 @@ export default function AdminProductsPage() {
               : 'bg-[#FFFFFF] dark:bg-[#242526] border-[#D9D9D9] dark:border-[#3A3B3C] text-[#353535] dark:text-[#F5F6F8]'
           }`}
         >
-          <CheckCircle2 className="h-4 w-4 text-[#3C6E71] dark:text-[#4D8B8E]" />
+          {notification.type === 'success' ? (
+            <CheckCircle2 className="h-4 w-4 text-[#3C6E71] dark:text-[#4D8B8E]" />
+          ) : (
+            <AlertCircle className="h-4 w-4 text-red-500" />
+          )}
           <span>{notification.message}</span>
         </div>
       )}
 
-      {/* 3. Filter Bar */}
+      {/* 3. Search & Filters Bar */}
       <div className="flex items-center justify-between gap-4 rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-4 shadow-subtle">
         <div className="relative flex-1 max-w-md">
           <input
@@ -263,7 +287,7 @@ export default function AdminProductsPage() {
             placeholder="Buscar por nombre, SKU o categoría..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 pl-10 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:ring-1 focus:ring-[#3C6E71] dark:focus:ring-[#4D8B8E] focus:outline-none"
+            className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 pl-10 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
           />
           <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#777777] dark:text-[#A8ABB2]" />
           {search && (
@@ -389,7 +413,7 @@ export default function AdminProductsPage() {
 
                           {/* BORRAR */}
                           <button
-                            onClick={() => handleDelete(prod.id, prod.name)}
+                            onClick={() => setProductToDelete(prod)}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
                             title="Borrar Producto"
                           >
@@ -407,7 +431,71 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* 5. CREATE / EDIT PRODUCT MODAL */}
+      {/* 5. DELETE CONFIRMATION MODAL */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Eliminar Producto?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setProductToDelete(null)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3.5 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] p-3.5 border border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-white p-0.5">
+                <img
+                  src={productToDelete.images?.[0]?.url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=400'}
+                  alt={productToDelete.name}
+                  className="h-full w-full object-cover rounded-lg"
+                />
+              </div>
+              <div>
+                <p className="font-black text-sm text-[#353535] dark:text-[#F5F6F8] line-clamp-1">{productToDelete.name}</p>
+                <span className="font-mono text-[11px] text-[#777777] dark:text-[#A8ABB2]">SKU: {productToDelete.sku}</span>
+                <p className="font-mono font-bold text-xs text-[#3C6E71] dark:text-[#4D8B8E] mt-0.5">
+                  {formatCurrency(productToDelete.basePrice)}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">
+              ¿Estás seguro de que deseas eliminar este producto? Se retirará de la Primera Plana, del catálogo y de las búsquedas.
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Sí, Eliminar Producto</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. CREATE / EDIT PRODUCT MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="w-full max-w-xl rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5 max-h-[90vh] overflow-y-auto">
@@ -418,7 +506,7 @@ export default function AdminProductsPage() {
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:text-[#353535] dark:hover:text-[#F5F6F8] cursor-pointer"
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -426,28 +514,26 @@ export default function AdminProductsPage() {
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
-                  Nombre del Artículo *
-                </label>
+                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Nombre del Producto *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ej. Tenis Nike Dunk Low Retro Panda"
+                  placeholder="Ej. Nike Air Jordan 1 High Retro"
                   className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">SKU Base *</label>
+                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Código SKU *</label>
                   <input
                     type="text"
                     required
                     value={formData.sku}
                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    placeholder="EJ. NK-DUNK-PND"
+                    placeholder="Ej. NK-AJ1-001"
                     className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 font-mono uppercase text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                   />
                 </div>
@@ -469,14 +555,14 @@ export default function AdminProductsPage() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Precio ($) *</label>
+                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Precio Venta ($) *</label>
                   <input
                     type="number"
                     step="0.01"
                     required
                     value={formData.basePrice}
                     onChange={(e) => setFormData({ ...formData, basePrice: Number(e.target.value) })}
-                    className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none font-mono"
+                    className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 font-mono text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -486,22 +572,21 @@ export default function AdminProductsPage() {
                     step="0.01"
                     value={formData.compareAtPrice}
                     onChange={(e) => setFormData({ ...formData, compareAtPrice: Number(e.target.value) })}
-                    className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none font-mono"
+                    className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 font-mono text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Stock Total</label>
+                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Stock Total *</label>
                   <input
                     type="number"
-                    min="1"
+                    required
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
-                    className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none font-mono"
+                    className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 font-mono text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Tallas y Colores dinámicos */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
@@ -511,7 +596,7 @@ export default function AdminProductsPage() {
                     type="text"
                     value={formData.sizes}
                     onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
-                    placeholder="Ej. 40, 41, 42 o S, M, L"
+                    placeholder="Ej. 38, 39, 40, 41, 42"
                     className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                   />
                 </div>
