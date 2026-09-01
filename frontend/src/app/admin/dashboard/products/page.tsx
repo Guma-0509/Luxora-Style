@@ -12,6 +12,7 @@ import {
   Copy,
   Trash2,
   Edit2,
+  Eye,
   Check,
   AlertCircle,
   X,
@@ -364,35 +365,36 @@ export default function AdminProductsPage() {
 
                       {/* Actions */}
                       <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {/* VER */}
                           <Link
                             href={`/products/${prod.slug}`}
                             target="_blank"
-                            className="rounded-xl p-2 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-colors"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2.5 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-all shadow-subtle cursor-pointer"
                             title="Ver en Tienda"
                           >
-                            <ExternalLink className="h-4 w-4" />
+                            <Eye className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                            <span>Ver</span>
                           </Link>
+
+                          {/* EDITAR */}
                           <button
                             onClick={() => handleOpenEdit(prod)}
-                            className="rounded-xl p-2 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:text-[#353535] dark:hover:text-[#F5F6F8] transition-colors cursor-pointer"
-                            title="Editar"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#3C6E71]/40 dark:border-[#4D8B8E]/40 bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-2.5 py-1.5 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] hover:bg-[#3C6E71] hover:text-white dark:hover:bg-[#4D8B8E] dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                            title="Editar Producto"
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit2 className="h-3.5 w-3.5" />
+                            <span>Editar</span>
                           </button>
-                          <button
-                            onClick={() => handleDuplicate(prod)}
-                            className="rounded-xl p-2 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:text-[#353535] dark:hover:text-[#F5F6F8] transition-colors cursor-pointer"
-                            title="Duplicar"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
+
+                          {/* BORRAR */}
                           <button
                             onClick={() => handleDelete(prod.id, prod.name)}
-                            className="rounded-xl p-2 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] hover:text-[#353535] dark:hover:text-[#F5F6F8] transition-colors cursor-pointer"
-                            title="Eliminar"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                            title="Borrar Producto"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Borrar</span>
                           </button>
                         </div>
                       </td>
