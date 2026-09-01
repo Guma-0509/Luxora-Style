@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Category } from '../../../../types';
 import { useCatalog, saveCategoriesCatalog, getStoredCategories } from '../../../../lib/catalogStore';
 import {
@@ -9,6 +10,7 @@ import {
   Search,
   Edit2,
   Trash2,
+  Eye,
   X,
   Check,
   Package,
@@ -228,6 +230,15 @@ export default function AdminCategoriesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        <Link
+                          href={`/?category=${cat.slug}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2.5 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-all shadow-subtle cursor-pointer"
+                          title="Ver en Tienda"
+                        >
+                          <Eye className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                          <span>Ver</span>
+                        </Link>
                         <button
                           onClick={() => handleOpenEditModal(cat)}
                           className="inline-flex items-center gap-1.5 rounded-xl border border-[#3C6E71]/40 dark:border-[#4D8B8E]/40 bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-2.5 py-1.5 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] hover:bg-[#3C6E71] hover:text-white dark:hover:bg-[#4D8B8E] dark:hover:text-white transition-all shadow-subtle cursor-pointer"

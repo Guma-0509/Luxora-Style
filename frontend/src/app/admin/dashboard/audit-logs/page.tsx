@@ -12,6 +12,10 @@ import {
   ChevronRight,
   Activity,
   Check,
+  Eye,
+  Trash2,
+  X,
+  CheckCircle2,
 } from 'lucide-react';
 
 const INITIAL_AUDIT_LOGS = [
@@ -109,54 +113,8 @@ const INITIAL_AUDIT_LOGS = [
     createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
     previousData: null,
     newData: {
-      loginMethod: 'EMAIL_PASSWORD',
+      authMethod: 'PASSWORD',
       tokenIssued: true,
-      authLevel: 'LEVEL_3',
-    },
-  },
-  {
-    id: 'log-5',
-    action: 'CREATE_COUPON',
-    entity: 'Coupon',
-    entityId: 'coup-1-bienvenido10',
-    description: 'Creación del código de descuento BIENVENIDO10 (10% OFF)',
-    ipAddress: '192.168.1.45',
-    userAgent: 'Chrome 124 / Windows 11',
-    user: {
-      firstName: 'Administrador',
-      lastName: 'Principal',
-      email: 'admin@wallystore.com',
-      role: 'SUPER_ADMIN',
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-    previousData: null,
-    newData: {
-      code: 'BIENVENIDO10',
-      type: 'PERCENTAGE',
-      value: 10,
-      usageLimit: 500,
-    },
-  },
-  {
-    id: 'log-6',
-    action: 'CREATE_CATEGORY',
-    entity: 'Category',
-    entityId: 'cat-1-tenis-sneakers',
-    description: 'Registro de la categoría Tenis & Sneakers en el catálogo',
-    ipAddress: '192.168.1.45',
-    userAgent: 'Chrome 124 / Windows 11',
-    user: {
-      firstName: 'Administrador',
-      lastName: 'Principal',
-      email: 'admin@wallystore.com',
-      role: 'SUPER_ADMIN',
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-    previousData: null,
-    newData: {
-      name: 'Tenis & Sneakers',
-      slug: 'tenis-sneakers',
-      isActive: true,
     },
   },
 ];
@@ -166,6 +124,7 @@ export default function AdminAuditLogsPage() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [viewingLog, setViewingLog] = useState<any | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
   useEffect(() => {
@@ -179,67 +138,54 @@ export default function AdminAuditLogsPage() {
       .catch(() => {});
   }, []);
 
-  const toggleExpand = (id: string) => {
-    setExpandedLogId(expandedLogId === id ? null : id);
-  };
-
   const handleSimulateNewLog = () => {
-    const actions = [
-      {
-        action: 'UPDATE_INVENTORY_SECURITY',
-        entity: 'InventoryVariant',
-        entityId: `var-${Date.now()}`,
-        description: 'Auditoría automática: Verificación de niveles de stock en almacén central',
-        newData: { status: 'VERIFIED', itemsScanned: 48, discrepancy: 0 },
-      },
-      {
-        action: 'SECURITY_TOKEN_REFRESH',
-        entity: 'AuthToken',
-        entityId: `tok-${Date.now()}`,
-        description: 'Rotación de token de sesión segura de administrador',
-        newData: { refreshed: true, validUntil: new Date(Date.now() + 86400000).toISOString() },
-      },
-    ];
-
-    const randomAction = actions[Math.floor(Math.random() * actions.length)];
-
-    const newEntry = {
+    const newLog = {
       id: `log-${Date.now()}`,
-      action: randomAction.action,
-      entity: randomAction.entity,
-      entityId: randomAction.entityId,
-      description: randomAction.description,
-      ipAddress: '192.168.1.45',
-      userAgent: 'Chrome 124 / Windows 11',
+      action: 'SYSTEM_SETTINGS_UPDATE',
+      entity: 'StoreSettings',
+      entityId: 'settings-luxora',
+      description: 'Prueba de auditoría de seguridad registrada en vivo',
+      ipAddress: '127.0.0.1',
+      userAgent: 'Chrome / Next.js',
       user: {
-        firstName: 'Administrador',
-        lastName: 'Principal',
-        email: 'admin@wallystore.com',
+        firstName: 'Admin',
+        lastName: 'Luxora',
+        email: 'admin@luxorastyle.com',
         role: 'SUPER_ADMIN',
       },
       createdAt: new Date().toISOString(),
-      previousData: null,
-      newData: randomAction.newData,
+      previousData: { theme: 'SYSTEM' },
+      newData: { theme: 'DARK', updatedBy: 'Admin' },
     };
 
-    setLogs([newEntry, ...logs]);
-    setNotification(`Nuevo registro de auditoría capturado: ${newEntry.action}`);
+    setLogs([newLog, ...logs]);
+    setNotification('Nuevo evento de auditoría generado y registrado');
     setTimeout(() => setNotification(null), 3500);
+  };
+
+  const handleDeleteLog = (id: string, actionName: string) => {
+    if (!confirm(`¿Deseas eliminar el log "${actionName}"?`)) return;
+    setLogs((prev) => prev.filter((l) => l.id !== id));
+    setNotification(`Log "${actionName}" eliminado`);
+    setTimeout(() => setNotification(null), 3500);
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedLogId(expandedLogId === id ? null : id);
   };
 
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
       log.action.toLowerCase().includes(search.toLowerCase()) ||
       log.entity.toLowerCase().includes(search.toLowerCase()) ||
-      (log.description && log.description.toLowerCase().includes(search.toLowerCase())) ||
+      log.description.toLowerCase().includes(search.toLowerCase()) ||
       (log.user?.email && log.user.email.toLowerCase().includes(search.toLowerCase()));
 
-    const matchesCategory =
-      categoryFilter === 'ALL' ||
-      (categoryFilter === 'PRODUCTS' && log.action.includes('PRODUCT')) ||
-      (categoryFilter === 'INVENTORY' && log.action.includes('STOCK')) ||
-      (categoryFilter === 'ORDERS' && log.action.includes('ORDER')) ||
-      (categoryFilter === 'AUTH' && (log.action.includes('AUTH') || log.action.includes('LOGIN')));
+    let matchesCategory = true;
+    if (categoryFilter === 'PRODUCTS') matchesCategory = log.entity === 'Product';
+    if (categoryFilter === 'INVENTORY') matchesCategory = log.entity === 'InventoryVariant';
+    if (categoryFilter === 'ORDERS') matchesCategory = log.entity === 'Order';
+    if (categoryFilter === 'AUTH') matchesCategory = log.entity === 'AuthSession';
 
     return matchesSearch && matchesCategory;
   });
@@ -249,11 +195,11 @@ export default function AdminAuditLogsPage() {
       {/* 1. Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#353535] tracking-tight flex items-center gap-2.5">
-            <ShieldCheck className="h-6 w-6 text-[#3C6E71]" />
+          <h1 className="text-2xl font-black text-[#353535] dark:text-[#F5F6F8] tracking-tight flex items-center gap-2.5">
+            <ShieldCheck className="h-6 w-6 text-[#3C6E71] dark:text-[#4D8B8E]" />
             Registro de Auditoría & Logs de Seguridad
           </h1>
-          <p className="text-xs text-[#777777] mt-1">
+          <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">
             Trazabilidad inmutable de todas las mutaciones administrativas, accesos y cambios en el sistema
           </p>
         </div>
@@ -261,7 +207,7 @@ export default function AdminAuditLogsPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={handleSimulateNewLog}
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#353535] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#284B63] transition-all shadow-subtle active:scale-98 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#284B63] dark:hover:bg-[#3C6E71] transition-all shadow-subtle active:scale-98 cursor-pointer"
           >
             <Activity className="h-4 w-4" />
             <span>Registrar Test Log</span>
@@ -271,23 +217,23 @@ export default function AdminAuditLogsPage() {
 
       {/* 2. Notification Toast */}
       {notification && (
-        <div className="flex items-center gap-2 rounded-2xl bg-[#FFFFFF] border border-[#3C6E71] p-4 text-xs font-bold text-[#3C6E71] shadow-subtle animate-fadeIn">
-          <Check className="h-4 w-4 text-[#3C6E71]" />
+        <div className="flex items-center gap-2 rounded-2xl bg-[#FFFFFF] dark:bg-[#242526] border border-[#3C6E71] dark:border-[#4D8B8E] p-4 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] shadow-subtle animate-fadeIn">
+          <CheckCircle2 className="h-4 w-4" />
           <span>{notification}</span>
         </div>
       )}
 
       {/* 3. Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 justify-between rounded-3xl border border-[#D9D9D9] bg-[#FFFFFF] p-4 shadow-subtle">
+      <div className="flex flex-col sm:flex-row items-center gap-4 justify-between rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-4 shadow-subtle">
         <div className="relative flex-1 max-w-md w-full">
           <input
             type="text"
             placeholder="Buscar por acción, entidad, usuario o detalle..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] px-3.5 py-2 pl-10 text-xs text-[#353535] placeholder:text-[#777777] focus:border-[#3C6E71] focus:outline-none"
+            className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 pl-10 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
           />
-          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#777777]" />
+          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#777777] dark:text-[#A8ABB2]" />
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -303,8 +249,8 @@ export default function AdminAuditLogsPage() {
               onClick={() => setCategoryFilter(tab.id)}
               className={`rounded-2xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                 categoryFilter === tab.id
-                  ? 'bg-[#3C6E71] text-white shadow-subtle'
-                  : 'bg-[#FFFFFF] text-[#777777] hover:text-[#353535] border border-[#D9D9D9]'
+                  ? 'bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-subtle'
+                  : 'bg-[#FFFFFF] dark:bg-[#1E1F20] text-[#777777] dark:text-[#A8ABB2] hover:text-[#353535] dark:hover:text-[#F5F6F8] border border-[#D9D9D9] dark:border-[#3A3B3C]'
               }`}
             >
               {tab.label}
@@ -314,103 +260,149 @@ export default function AdminAuditLogsPage() {
       </div>
 
       {/* 4. Audit Logs Table */}
-      <div className="overflow-hidden rounded-3xl border border-[#D9D9D9] bg-[#FFFFFF] shadow-subtle">
+      <div className="overflow-hidden rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] shadow-subtle">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#353535]">
-            <thead className="border-b border-[#D9D9D9] bg-[#D9D9D9]/20 text-[11px] uppercase tracking-wider text-[#777777]">
+          <table className="w-full text-left text-xs text-[#353535] dark:text-[#F5F6F8]">
+            <thead className="border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20] text-[11px] uppercase tracking-wider text-[#777777] dark:text-[#A8ABB2]">
               <tr>
-                <th className="py-3.5 px-4 w-8"></th>
-                <th className="py-3.5 px-4">Acción / Operación</th>
+                <th className="py-3.5 px-4">Acción / Entidad</th>
                 <th className="py-3.5 px-4">Descripción del Cambio</th>
-                <th className="py-3.5 px-4">Usuario Responsable</th>
+                <th className="py-3.5 px-4">Usuario</th>
                 <th className="py-3.5 px-4">IP & Cliente</th>
-                <th className="py-3.5 px-4 text-right">Fecha / Hora</th>
+                <th className="py-3.5 px-4">Fecha / Hora</th>
+                <th className="py-3.5 px-4 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#D9D9D9]/60">
-              {filteredLogs.map((log) => (
-                <React.Fragment key={log.id}>
-                  <tr
-                    onClick={() => toggleExpand(log.id)}
-                    className="hover:bg-[#D9D9D9]/15 cursor-pointer transition-colors"
-                  >
-                    <td className="py-3.5 px-4 text-[#777777]">
-                      {expandedLogId === log.id ? (
-                        <ChevronDown className="h-4 w-4 text-[#3C6E71]" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </td>
+            <tbody className="divide-y divide-[#D9D9D9]/60 dark:divide-[#3A3B3C]/60">
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-xs text-[#777777] dark:text-[#A8ABB2]">
+                    No se encontraron registros de auditoría.
+                  </td>
+                </tr>
+              ) : (
+                filteredLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-[#D9D9D9]/15 dark:hover:bg-[#2E3236]/40 transition-colors">
                     <td className="py-3.5 px-4">
-                      <span className="inline-block font-mono font-bold text-[#3C6E71] text-xs">
+                      <span className="inline-block font-mono font-bold text-[#3C6E71] dark:text-[#4D8B8E] text-xs">
                         {log.action}
                       </span>
-                      <span className="block text-[10px] text-[#777777] font-mono">
+                      <span className="block text-[10px] text-[#777777] dark:text-[#A8ABB2] font-mono">
                         {log.entity}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-[#353535] max-w-sm">
-                      <p className="font-semibold text-[#353535]">{log.description || 'Operación registrada'}</p>
-                      <span className="text-[10px] text-[#777777] font-mono">ID: {log.entityId}</span>
+                    <td className="py-3.5 px-4 max-w-sm">
+                      <p className="font-semibold text-[#353535] dark:text-[#F5F6F8]">{log.description || 'Operación registrada'}</p>
+                      <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] font-mono">ID: {log.entityId}</span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <p className="font-bold text-[#353535]">
+                      <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">
                         {log.user ? `${log.user.firstName} ${log.user.lastName}` : 'Sistema'}
                       </p>
-                      <p className="text-[10px] text-[#777777]">{log.user?.email || 'system@wallystore.com'}</p>
+                      <p className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">{log.user?.email || 'system@wallystore.com'}</p>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-[#353535]">
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-[#353535] dark:text-[#F5F6F8]">
                       <span>{log.ipAddress || '127.0.0.1'}</span>
-                      <span className="block text-[9px] text-[#777777] truncate max-w-[120px]">
+                      <span className="block text-[9px] text-[#777777] dark:text-[#A8ABB2] truncate max-w-[120px]">
                         {log.userAgent || 'Web Browser'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-right text-[#777777] font-mono text-[11px]">
+                    <td className="py-3.5 px-4 text-[#777777] dark:text-[#A8ABB2] font-mono text-[11px]">
                       {formatDate(log.createdAt)}
                     </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {/* VER */}
+                        <button
+                          onClick={() => setViewingLog(log)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2.5 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-all shadow-subtle cursor-pointer"
+                          title="Ver Payload"
+                        >
+                          <Eye className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                          <span>Ver</span>
+                        </button>
+
+                        {/* BORRAR */}
+                        <button
+                          onClick={() => handleDeleteLog(log.id, log.action)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                          title="Borrar Log"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Borrar</span>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-
-                  {/* Expanded JSON Diff View */}
-                  {expandedLogId === log.id && (
-                    <tr className="bg-[#D9D9D9]/20 border-b border-[#D9D9D9]">
-                      <td colSpan={6} className="p-4 sm:p-6 space-y-4">
-                        <div className="flex items-center gap-2 text-xs font-bold text-[#353535]">
-                          <Code2 className="h-4 w-4 text-[#3C6E71]" />
-                          <span>Detalle de la Carga Útil (Payload de Mutación):</span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-[11px] font-bold text-[#777777] uppercase tracking-wider block mb-1">
-                              Estado Anterior:
-                            </span>
-                            <pre className="rounded-2xl bg-[#FFFFFF] p-3.5 text-[11px] font-mono text-[#353535] overflow-x-auto border border-[#D9D9D9] leading-relaxed">
-                              {log.previousData
-                                ? JSON.stringify(log.previousData, null, 2)
-                                : '// Sin estado previo (Registro Nuevo)'}
-                            </pre>
-                          </div>
-
-                          <div>
-                            <span className="text-[11px] font-bold text-[#3C6E71] uppercase tracking-wider block mb-1">
-                              Nuevo Estado Registrado:
-                            </span>
-                            <pre className="rounded-2xl bg-[#FFFFFF] p-3.5 text-[11px] font-mono text-[#353535] overflow-x-auto border border-[#3C6E71] leading-relaxed font-semibold">
-                              {log.newData
-                                ? JSON.stringify(log.newData, null, 2)
-                                : '// Operación de solo lectura'}
-                            </pre>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* VIEW LOG MODAL */}
+      {viewingLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-xl rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div>
+                <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] flex items-center gap-2">
+                  <Code2 className="h-5 w-5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                  Detalle del Evento de Auditoría
+                </h3>
+                <p className="text-xs font-mono font-bold text-[#3C6E71] dark:text-[#4D8B8E] mt-0.5">{viewingLog.action}</p>
+              </div>
+              <button
+                onClick={() => setViewingLog(null)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+                <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] block">Descripción:</span>
+                <p className="text-xs font-medium text-[#353535] dark:text-[#F5F6F8]">{viewingLog.description}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[11px] font-bold text-[#777777] dark:text-[#A8ABB2] uppercase tracking-wider block mb-1">
+                    Estado Anterior:
+                  </span>
+                  <pre className="rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] p-3 text-[11px] font-mono text-[#353535] dark:text-[#F5F6F8] overflow-x-auto border border-[#D9D9D9] dark:border-[#3A3B3C] max-h-48 leading-relaxed">
+                    {viewingLog.previousData
+                      ? JSON.stringify(viewingLog.previousData, null, 2)
+                      : '// Sin estado previo'}
+                  </pre>
+                </div>
+
+                <div>
+                  <span className="text-[11px] font-bold text-[#3C6E71] dark:text-[#4D8B8E] uppercase tracking-wider block mb-1">
+                    Nuevo Estado Registrado:
+                  </span>
+                  <pre className="rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] p-3 text-[11px] font-mono text-[#353535] dark:text-[#F5F6F8] overflow-x-auto border border-[#3C6E71] dark:border-[#4D8B8E] max-h-48 leading-relaxed font-semibold">
+                    {viewingLog.newData
+                      ? JSON.stringify(viewingLog.newData, null, 2)
+                      : '// Solo lectura'}
+                  </pre>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C] flex justify-end">
+              <button
+                onClick={() => setViewingLog(null)}
+                className="rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] px-5 py-2.5 text-xs font-bold text-white shadow-subtle cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

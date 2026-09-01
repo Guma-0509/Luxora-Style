@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { api } from '../../../../lib/api';
 import { formatCurrency } from '../../../../lib/utils';
 import { useCatalog, getStoredProducts, saveProductsCatalog } from '../../../../lib/catalogStore';
@@ -10,7 +11,9 @@ import {
   Search,
   Plus,
   Minus,
-  Edit,
+  Edit2,
+  Trash2,
+  Eye,
   Check,
   AlertCircle,
   X,
@@ -38,6 +41,7 @@ export default function AdminInventoryPage() {
           {
             id: `v-${p.id}`,
             productId: p.id,
+            productSlug: p.slug,
             sku: p.sku,
             title: 'Estándar',
             productName: p.name,
@@ -50,6 +54,7 @@ export default function AdminInventoryPage() {
       return variants.map((v) => ({
         id: v.id,
         productId: p.id,
+        productSlug: p.slug,
         sku: v.sku || `${p.sku}-${v.id}`,
         title: v.title || 'Opción',
         productName: p.name,
@@ -86,6 +91,30 @@ export default function AdminInventoryPage() {
       type: 'success',
     });
     setSelectedVariant(null);
+    setTimeout(() => setNotification(null), 3500);
+  };
+
+  const handleZeroStock = (item: any) => {
+    if (!confirm(`¿Deseas poner a 0 el stock de la variante "${item.sku}"?`)) return;
+
+    const allProducts = getStoredProducts();
+    const updatedProducts = allProducts.map((p) => {
+      if (p.id === item.productId) {
+        const updatedVariants = (p.variants || []).map((v) =>
+          v.id === item.id ? { ...v, stock: 0 } : v
+        );
+        return { ...p, variants: updatedVariants };
+      }
+      return p;
+    });
+
+    saveProductsCatalog(updatedProducts);
+    refreshCatalog();
+
+    setNotification({
+      message: `Stock de ${item.sku} reseteado a 0 unidades`,
+      type: 'success',
+    });
     setTimeout(() => setNotification(null), 3500);
   };
 
@@ -175,7 +204,7 @@ export default function AdminInventoryPage() {
                 <th className="px-6 py-3.5">Precio Venta</th>
                 <th className="px-6 py-3.5">Costo Aprox.</th>
                 <th className="px-6 py-3.5">Stock Físico</th>
-                <th className="px-6 py-3.5 text-right">Ajuste Rápido</th>
+                <th className="px-6 py-3.5 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D9D9D9]/60 dark:divide-[#3A3B3C]/60 text-[#353535] dark:text-[#F5F6F8]">
@@ -219,16 +248,41 @@ export default function AdminInventoryPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => {
-                            setSelectedVariant(item);
-                            setAdjustQuantity(10);
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-colors cursor-pointer shadow-subtle"
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                          <span>Ajustar Stock</span>
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {/* VER */}
+                          <Link
+                            href={`/products/${item.productSlug}`}
+                            target="_blank"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2.5 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-all shadow-subtle cursor-pointer"
+                            title="Ver en Tienda"
+                          >
+                            <Eye className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                            <span>Ver</span>
+                          </Link>
+
+                          {/* EDITAR */}
+                          <button
+                            onClick={() => {
+                              setSelectedVariant(item);
+                              setAdjustQuantity(10);
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#3C6E71]/40 dark:border-[#4D8B8E]/40 bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-2.5 py-1.5 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] hover:bg-[#3C6E71] hover:text-white dark:hover:bg-[#4D8B8E] dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                            title="Ajustar Stock"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                            <span>Editar</span>
+                          </button>
+
+                          {/* BORRAR */}
+                          <button
+                            onClick={() => handleZeroStock(item)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                            title="Vaciar Stock"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Borrar</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

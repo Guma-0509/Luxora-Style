@@ -8,10 +8,13 @@ import {
   Search,
   Truck,
   Edit2,
+  Trash2,
+  Eye,
   Check,
   AlertCircle,
   X,
   Package,
+  CheckCircle2,
 } from 'lucide-react';
 
 const INITIAL_ORDERS = [
@@ -29,6 +32,7 @@ const INITIAL_ORDERS = [
     status: 'PAID',
     carrier: 'FedEx Express',
     trackingNumber: 'FDX-893019284',
+    shippingAddress: 'Av. Winston Churchill 109, Piantini, Santo Domingo',
   },
   {
     id: 'ord-2',
@@ -44,6 +48,7 @@ const INITIAL_ORDERS = [
     status: 'PROCESSING',
     carrier: 'DHL Express',
     trackingNumber: 'DHL-449102941',
+    shippingAddress: 'Calle El Sol #45, Santiago De Los Caballeros',
   },
   {
     id: 'ord-3',
@@ -59,6 +64,7 @@ const INITIAL_ORDERS = [
     status: 'SHIPPED',
     carrier: 'FedEx Express',
     trackingNumber: 'FDX-994012485',
+    shippingAddress: 'Torre Empresarial Bella Vista, Piso 8, Santo Domingo',
   },
   {
     id: 'ord-4',
@@ -74,6 +80,7 @@ const INITIAL_ORDERS = [
     status: 'DELIVERED',
     carrier: 'DHL Express',
     trackingNumber: 'DHL-102948172',
+    shippingAddress: 'Residencial Las Praderas #12, La Romana',
   },
 ];
 
@@ -81,7 +88,8 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>(INITIAL_ORDERS);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<any | null>(null);
+  const [selectedOrderForView, setSelectedOrderForView] = useState<any | null>(null);
   const [newStatus, setNewStatus] = useState('PAID');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [carrier, setCarrier] = useState('FedEx Express');
@@ -101,12 +109,13 @@ export default function AdminOrdersPage() {
               itemsCount: o.items?.length || 1,
               itemsDescription: o.items?.map((i: any) => i.title).join(', ') || 'Artículos de moda',
               createdAt: o.createdAt,
-              grandTotal: Number(o.grandTotal),
-              paymentMethod: o.payment?.method || 'Tarjeta',
-              paymentStatus: o.payment?.status || 'Aprobado',
+              grandTotal: Number(o.grandTotal || o.total),
+              paymentMethod: o.payment?.method || o.paymentMethod || 'Tarjeta',
+              paymentStatus: o.payment?.status || o.paymentStatus || 'Aprobado',
               status: o.status,
               carrier: o.carrier || 'FedEx Express',
               trackingNumber: o.trackingNumber || '',
+              shippingAddress: o.shippingAddress || 'Dirección de envío registrada',
             })),
           );
         }
@@ -114,20 +123,34 @@ export default function AdminOrdersPage() {
       .catch(() => {});
   }, []);
 
+  const handleOpenView = (ord: any) => {
+    setSelectedOrderForView(ord);
+  };
+
   const handleOpenEdit = (ord: any) => {
-    setSelectedOrder(ord);
+    setSelectedOrderForEdit(ord);
     setNewStatus(ord.status);
     setTrackingNumber(ord.trackingNumber || '');
     setCarrier(ord.carrier || 'FedEx Express');
   };
 
+  const handleDeleteOrder = (id: string, orderNumber: string) => {
+    if (!confirm(`¿Estás seguro de que deseas eliminar o cancelar la orden "${orderNumber}"?`)) return;
+    setOrders((prev) => prev.filter((o) => o.id !== id));
+    setNotification({
+      message: `Orden "${orderNumber}" eliminada exitosamente`,
+      type: 'success',
+    });
+    setTimeout(() => setNotification(null), 3500);
+  };
+
   const handleUpdateStatus = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedOrder) return;
+    if (!selectedOrderForEdit) return;
 
     try {
       await api
-        .patch(`/admin/orders/${selectedOrder.id}/status`, {
+        .patch(`/admin/orders/${selectedOrderForEdit.id}/status`, {
           status: newStatus,
           trackingNumber: trackingNumber || undefined,
           carrier: carrier || undefined,
@@ -136,17 +159,17 @@ export default function AdminOrdersPage() {
 
       setOrders((prev) =>
         prev.map((o) =>
-          o.id === selectedOrder.id
+          o.id === selectedOrderForEdit.id
             ? { ...o, status: newStatus, trackingNumber, carrier }
             : o,
         ),
       );
 
       setNotification({
-        message: `Orden ${selectedOrder.orderNumber} actualizada a estado: ${newStatus}`,
+        message: `Orden ${selectedOrderForEdit.orderNumber} actualizada a estado: ${newStatus}`,
         type: 'success',
       });
-      setSelectedOrder(null);
+      setSelectedOrderForEdit(null);
       setTimeout(() => setNotification(null), 3500);
     } catch (err: any) {
       setNotification({ message: 'Error al actualizar pedido', type: 'error' });
@@ -168,12 +191,12 @@ export default function AdminOrdersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#353535] tracking-tight flex items-center gap-2.5">
-            <ShoppingCart className="h-6 w-6 text-[#3C6E71]" />
+          <h1 className="text-2xl font-black text-[#353535] dark:text-[#F5F6F8] tracking-tight flex items-center gap-2.5">
+            <ShoppingCart className="h-6 w-6 text-[#3C6E71] dark:text-[#4D8B8E]" />
             Gestión de Pedidos & Ventas
           </h1>
-          <p className="text-xs text-[#777777] mt-1">
-            Supervisa el flujo de ventas, estados de entrega y números de guía courier
+          <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">
+            Supervisa compras, clientes, estados de envío y números de seguimiento
           </p>
         </div>
       </div>
@@ -181,122 +204,228 @@ export default function AdminOrdersPage() {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`flex items-center gap-2 rounded-2xl p-4 text-xs font-bold shadow-subtle border ${
+          className={`flex items-center gap-2 rounded-2xl p-4 text-xs font-bold shadow-subtle border animate-fadeIn ${
             notification.type === 'success'
-              ? 'bg-[#FFFFFF] border-[#3C6E71] text-[#3C6E71]'
-              : 'bg-[#FFFFFF] border-[#D9D9D9] text-[#353535]'
+              ? 'bg-[#FFFFFF] dark:bg-[#242526] border-[#3C6E71] dark:border-[#4D8B8E] text-[#3C6E71] dark:text-[#4D8B8E]'
+              : 'bg-[#FFFFFF] dark:bg-[#242526] border-[#D9D9D9] dark:border-[#3A3B3C] text-[#353535] dark:text-[#F5F6F8]'
           }`}
         >
-          <Check className="h-4 w-4 text-[#3C6E71]" />
+          <CheckCircle2 className="h-4 w-4 text-[#3C6E71] dark:text-[#4D8B8E]" />
           <span>{notification.message}</span>
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 justify-between rounded-3xl border border-[#D9D9D9] bg-[#FFFFFF] p-4 shadow-subtle">
+      <div className="flex flex-col sm:flex-row items-center gap-4 justify-between rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-4 shadow-subtle">
         <div className="relative flex-1 max-w-md w-full">
           <input
             type="text"
-            placeholder="Buscar por # de orden, cliente o correo..."
+            placeholder="Buscar por # de orden, cliente o email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] px-3.5 py-2 pl-10 text-xs text-[#353535] placeholder:text-[#777777] focus:border-[#3C6E71] focus:outline-none"
+            className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 pl-10 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
           />
-          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#777777]" />
+          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#777777] dark:text-[#A8ABB2]" />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-2 text-xs font-bold text-[#777777] dark:text-[#A8ABB2] hover:text-[#353535] dark:hover:text-[#F5F6F8]"
+            >
+              ×
+            </button>
+          )}
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] px-3.5 py-2 text-xs text-[#353535] focus:border-[#3C6E71] focus:outline-none"
-        >
-          <option value="ALL">Todos los Estados</option>
-          <option value="PENDING">Pendiente de Pago</option>
-          <option value="PAID">Pagado (PAID)</option>
-          <option value="PROCESSING">En Preparación (PROCESSING)</option>
-          <option value="SHIPPED">Despachado (SHIPPED)</option>
-          <option value="DELIVERED">Entregado (DELIVERED)</option>
-          <option value="CANCELLED">Cancelado (CANCELLED)</option>
-        </select>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3 py-2 text-xs text-[#353535] dark:text-[#F5F6F8] font-bold focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
+          >
+            <option value="ALL">Todos los Estados</option>
+            <option value="PAID">Pagados</option>
+            <option value="PROCESSING">En Proceso</option>
+            <option value="SHIPPED">Enviados</option>
+            <option value="DELIVERED">Entregados</option>
+            <option value="CANCELLED">Cancelados</option>
+          </select>
+        </div>
       </div>
 
       {/* Orders Table */}
-      <div className="overflow-hidden rounded-3xl border border-[#D9D9D9] bg-[#FFFFFF] shadow-subtle">
+      <div className="overflow-hidden rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] shadow-subtle">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#353535]">
-            <thead className="border-b border-[#D9D9D9] bg-[#D9D9D9]/20 text-[11px] uppercase tracking-wider text-[#777777]">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20] uppercase font-bold text-[#777777] dark:text-[#A8ABB2] text-[10px] tracking-wider">
               <tr>
-                <th className="py-3.5 px-4">Orden & Guía</th>
+                <th className="py-3.5 px-4">Orden / Guía</th>
                 <th className="py-3.5 px-4">Cliente</th>
                 <th className="py-3.5 px-4">Fecha</th>
-                <th className="py-3.5 px-4">Total</th>
+                <th className="py-3.5 px-4">Monto Total</th>
                 <th className="py-3.5 px-4">Pago</th>
                 <th className="py-3.5 px-4">Estado</th>
-                <th className="py-3.5 px-4 text-right">Acción</th>
+                <th className="py-3.5 px-4 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#D9D9D9]/60">
-              {filteredOrders.map((ord) => (
-                <tr key={ord.id} className="hover:bg-[#D9D9D9]/15 transition-colors">
-                  <td className="py-3.5 px-4">
-                    <span className="font-mono font-bold text-[#353535] block">{ord.orderNumber}</span>
-                    {ord.trackingNumber ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-[#3C6E71] font-mono mt-0.5">
-                        <Truck className="h-3 w-3 text-[#3C6E71]" /> {ord.carrier}: {ord.trackingNumber}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-[#777777]">Sin guía asignada</span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <p className="font-bold text-[#353535]">{ord.customerName}</p>
-                    <p className="text-[10px] text-[#777777]">{ord.email}</p>
-                  </td>
-                  <td className="py-3.5 px-4 text-[#777777] font-mono text-[11px]">
-                    {formatDate(ord.createdAt)}
-                  </td>
-                  <td className="py-3.5 px-4 font-black text-[#353535] font-mono">
-                    {formatCurrency(ord.grandTotal)}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="font-semibold text-[#353535] block">{ord.paymentMethod}</span>
-                    <span className="text-[10px] font-bold text-[#3C6E71]">{ord.paymentStatus}</span>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className="inline-block rounded-full bg-[#3C6E71]/10 px-2.5 py-0.5 text-[10px] font-bold text-[#3C6E71]">
-                      {ord.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <button
-                      onClick={() => handleOpenEdit(ord)}
-                      className="inline-flex items-center gap-1 rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] px-3 py-1.5 text-xs font-bold text-[#353535] hover:bg-[#353535] hover:text-white transition-all cursor-pointer"
-                    >
-                      <Edit2 className="h-3 w-3" /> Gestionar
-                    </button>
+            <tbody className="divide-y divide-[#D9D9D9]/60 dark:divide-[#3A3B3C]/60 text-[#353535] dark:text-[#F5F6F8]">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-xs text-[#777777] dark:text-[#A8ABB2]">
+                    No se encontraron órdenes registradas.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOrders.map((ord) => (
+                  <tr key={ord.id} className="hover:bg-[#D9D9D9]/15 dark:hover:bg-[#2E3236]/40 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <span className="font-mono font-bold text-[#353535] dark:text-[#F5F6F8] block">{ord.orderNumber}</span>
+                      {ord.trackingNumber ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-[#3C6E71] dark:text-[#4D8B8E] font-mono mt-0.5">
+                          <Truck className="h-3 w-3" /> {ord.carrier}: {ord.trackingNumber}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">Sin guía asignada</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">{ord.customerName}</p>
+                      <p className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">{ord.email}</p>
+                    </td>
+                    <td className="py-3.5 px-4 text-[#777777] dark:text-[#A8ABB2] font-mono text-[11px]">
+                      {formatDate(ord.createdAt)}
+                    </td>
+                    <td className="py-3.5 px-4 font-black text-[#353535] dark:text-[#F5F6F8] font-mono">
+                      {formatCurrency(ord.grandTotal)}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="font-semibold text-[#353535] dark:text-[#F5F6F8] block">{ord.paymentMethod}</span>
+                      <span className="text-[10px] font-bold text-[#3C6E71] dark:text-[#4D8B8E]">{ord.paymentStatus}</span>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-block rounded-full bg-[#3C6E71]/15 dark:bg-[#4D8B8E]/20 text-[#3C6E71] dark:text-[#4D8B8E] border border-[#3C6E71]/30 px-2.5 py-0.5 text-[10px] font-bold">
+                        {ord.status}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {/* VER */}
+                        <button
+                          onClick={() => handleOpenView(ord)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2.5 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-all shadow-subtle cursor-pointer"
+                          title="Ver Detalle"
+                        >
+                          <Eye className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                          <span>Ver</span>
+                        </button>
+
+                        {/* EDITAR */}
+                        <button
+                          onClick={() => handleOpenEdit(ord)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#3C6E71]/40 dark:border-[#4D8B8E]/40 bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 px-2.5 py-1.5 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] hover:bg-[#3C6E71] hover:text-white dark:hover:bg-[#4D8B8E] dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                          title="Editar Pedido"
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                          <span>Editar</span>
+                        </button>
+
+                        {/* BORRAR */}
+                        <button
+                          onClick={() => handleDeleteOrder(ord.id, ord.orderNumber)}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+                          title="Eliminar Pedido"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Borrar</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Update Status Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fadeIn">
-          <div className="w-full max-w-md rounded-3xl border border-[#D9D9D9] bg-[#FFFFFF] p-6 sm:p-8 shadow-dropdown space-y-5">
-            <div className="flex items-center justify-between border-b border-[#D9D9D9] pb-3">
+      {/* VIEW ORDER DETAILS MODAL */}
+      {selectedOrderForView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-lg rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
               <div>
-                <h3 className="text-base font-black text-[#353535] flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5 text-[#3C6E71]" />
-                  Actualizar Pedido
+                <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                  Detalle del Pedido
                 </h3>
-                <p className="text-xs font-mono text-[#777777] mt-0.5">{selectedOrder.orderNumber}</p>
+                <p className="text-xs font-mono text-[#3C6E71] dark:text-[#4D8B8E] mt-0.5">{selectedOrderForView.orderNumber}</p>
               </div>
               <button
-                onClick={() => setSelectedOrder(null)}
-                className="rounded-full p-1.5 text-[#777777] hover:bg-[#D9D9D9]/30 hover:text-[#353535]"
+                onClick={() => setSelectedOrderForView(null)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+                <div>
+                  <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] block">Cliente</span>
+                  <strong className="text-[#353535] dark:text-[#F5F6F8]">{selectedOrderForView.customerName}</strong>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">{selectedOrderForView.email}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] block">Estado</span>
+                  <strong className="text-[#3C6E71] dark:text-[#4D8B8E]">{selectedOrderForView.status}</strong>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">{selectedOrderForView.paymentMethod}</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+                <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] block">Dirección de Entrega</span>
+                <p className="text-xs text-[#353535] dark:text-[#F5F6F8] font-medium">{selectedOrderForView.shippingAddress}</p>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+                <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] block">Artículos ({selectedOrderForView.itemsCount})</span>
+                <p className="text-xs text-[#353535] dark:text-[#F5F6F8] font-medium">{selectedOrderForView.itemsDescription}</p>
+              </div>
+
+              <div className="flex justify-between items-center p-3 rounded-2xl bg-[#3C6E71]/10 dark:bg-[#4D8B8E]/20 border border-[#3C6E71]/30">
+                <span className="font-bold text-[#353535] dark:text-[#F5F6F8]">Total Pagado:</span>
+                <span className="font-mono font-black text-base text-[#3C6E71] dark:text-[#4D8B8E]">
+                  {formatCurrency(selectedOrderForView.grandTotal)}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C] flex justify-end">
+              <button
+                onClick={() => setSelectedOrderForView(null)}
+                className="rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] px-5 py-2.5 text-xs font-bold text-white shadow-subtle cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UPDATE STATUS MODAL */}
+      {selectedOrderForEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div>
+                <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] flex items-center gap-2">
+                  <Edit2 className="h-5 w-5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+                  Actualizar Pedido
+                </h3>
+                <p className="text-xs font-mono text-[#777777] dark:text-[#A8ABB2] mt-0.5">{selectedOrderForEdit.orderNumber}</p>
+              </div>
+              <button
+                onClick={() => setSelectedOrderForEdit(null)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -304,13 +433,13 @@ export default function AdminOrdersPage() {
 
             <form onSubmit={handleUpdateStatus} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#353535] mb-1">
+                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
                   Estado del Pedido *
                 </label>
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value)}
-                  className="w-full rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] p-2.5 text-xs text-[#353535] focus:border-[#3C6E71] focus:outline-none"
+                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] p-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                 >
                   <option value="PAID">PAID (Pagado)</option>
                   <option value="PROCESSING">PROCESSING (En Preparación / Empaque)</option>
@@ -321,42 +450,42 @@ export default function AdminOrdersPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#353535] mb-1">
-                  Empresa de Mensajería / Courier
+                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
+                  Empresa de Envío / Courier
                 </label>
                 <input
                   type="text"
                   value={carrier}
                   onChange={(e) => setCarrier(e.target.value)}
-                  placeholder="Ej. FedEx Express, DHL, Servientrega"
-                  className="w-full rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] p-2.5 text-xs text-[#353535] focus:border-[#3C6E71] focus:outline-none"
+                  placeholder="Ej. FedEx Express, DHL, Envía..."
+                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#353535] mb-1">
+                <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">
                   Número de Guía / Tracking
                 </label>
                 <input
                   type="text"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="Ej. FDX-993019284"
-                  className="w-full rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] p-2.5 text-xs text-[#353535] focus:border-[#3C6E71] focus:outline-none font-mono"
+                  placeholder="Ej. FDX-893019284"
+                  className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 font-mono text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                 />
               </div>
 
-              <div className="flex gap-3 pt-3 border-t border-[#D9D9D9]">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
                 <button
                   type="button"
-                  onClick={() => setSelectedOrder(null)}
-                  className="flex-1 rounded-2xl border border-[#D9D9D9] bg-[#FFFFFF] py-2.5 text-xs font-bold text-[#353535] hover:bg-[#D9D9D9]/30"
+                  onClick={() => setSelectedOrderForEdit(null)}
+                  className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-2xl bg-[#3C6E71] py-2.5 text-xs font-bold text-white hover:bg-[#284B63] shadow-subtle active:scale-98 cursor-pointer"
+                  className="rounded-2xl bg-[#3C6E71] dark:bg-[#4D8B8E] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#284B63] dark:hover:bg-[#3C6E71] shadow-subtle active:scale-98 cursor-pointer"
                 >
                   Guardar Cambios
                 </button>
