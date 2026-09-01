@@ -1,7 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
 import { ProductDetailClient } from './ProductDetailClient';
-import { INITIAL_PRODUCTS } from '../../../lib/mockData';
 import { Product } from '../../../types';
 
 export const dynamic = 'force-dynamic';
@@ -24,9 +23,7 @@ async function getInitialProduct(slug: string): Promise<Product | null> {
     }
   } catch (error) {}
 
-  // Fallback to initial mock products
-  const mockFound = INITIAL_PRODUCTS.find((p) => p.slug === slug || p.id === slug);
-  return (mockFound as Product) || null;
+  return null;
 }
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {

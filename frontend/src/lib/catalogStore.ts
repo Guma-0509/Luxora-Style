@@ -2,15 +2,27 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Product, Category, ProductVariant } from '../types';
-import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from './mockData';
+import { INITIAL_CATEGORIES } from './mockData';
 import { api } from './api';
 
 const PRODUCTS_STORAGE_KEY = 'luxora_products_catalog';
 const CATEGORIES_STORAGE_KEY = 'luxora_categories_catalog';
-const CATALOG_INITIALIZED_KEY = 'luxora_catalog_initialized_v2';
 const CATALOG_EVENT_NAME = 'luxora_catalog_updated';
 
-// Helper to get stored products or default initial products
+// Known legacy demo products to permanently filter out from local cache
+const DEMO_PRODUCT_IDS = ['prod-1', 'prod-2', 'prod-3', 'prod-4', 'prod-5', 'prod-6', 'prod-7', 'prod-8'];
+const DEMO_PRODUCT_SKUS = [
+  'NK-AJ1-OG',
+  'AD-UB-LIGHT',
+  'DIOR-SV-100',
+  'TS-OVR-HVY',
+  'JNS-SLIM-511',
+  'RLJ-CRN-BLK',
+  'NE-NY-5950',
+  'BLU-CHN-100',
+];
+
+// Helper to get stored products without ever re-injecting demo products
 export function getStoredProducts(): Product[] {
   if (typeof window === 'undefined') {
     return [];
@@ -21,16 +33,15 @@ export function getStoredProducts(): Product[] {
     if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed;
+        // Strip out any legacy demo products
+        const filtered = parsed.filter(
+          (p: Product) => !DEMO_PRODUCT_IDS.includes(p.id) && !DEMO_PRODUCT_SKUS.includes(p.sku)
+        );
+        if (filtered.length !== parsed.length) {
+          localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(filtered));
+        }
+        return filtered;
       }
-    }
-
-    // Only seed initial products the very first time on a fresh browser
-    const isInitialized = localStorage.getItem(CATALOG_INITIALIZED_KEY);
-    if (!isInitialized) {
-      localStorage.setItem(CATALOG_INITIALIZED_KEY, 'true');
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(INITIAL_PRODUCTS));
-      return INITIAL_PRODUCTS;
     }
   } catch (e) {
     console.error('Error reading stored products:', e);
@@ -42,29 +53,27 @@ export function getStoredProducts(): Product[] {
 // Helper to get stored categories
 export function getStoredCategories(): Category[] {
   if (typeof window === 'undefined') {
-    return [];
+    return INITIAL_CATEGORIES;
   }
 
   try {
     const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
     if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
       }
-    }
-
-    const isInitialized = localStorage.getItem(CATALOG_INITIALIZED_KEY);
-    if (!isInitialized) {
-      localStorage.setItem(CATALOG_INITIALIZED_KEY, 'true');
-      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
-      return INITIAL_CATEGORIES;
     }
   } catch (e) {
     console.error('Error reading stored categories:', e);
   }
 
-  return [];
+  // Fallback to default categories if none
+  try {
+    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
+  } catch (e) {}
+
+  return INITIAL_CATEGORIES;
 }
 
 // Save product to catalog (Add or Update)
@@ -237,7 +246,6 @@ export function toggleProductStatusInCatalog(productId: string): Product[] {
 export function saveProductsCatalog(products: Product[]): void {
   if (typeof window !== 'undefined') {
     try {
-      localStorage.setItem(CATALOG_INITIALIZED_KEY, 'true');
       localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
       window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'products', count: products.length } }));
     } catch (e) {
@@ -250,7 +258,6 @@ export function saveProductsCatalog(products: Product[]): void {
 export function saveCategoriesCatalog(categories: Category[]): void {
   if (typeof window !== 'undefined') {
     try {
-      localStorage.setItem(CATALOG_INITIALIZED_KEY, 'true');
       localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
       window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'categories', count: categories.length } }));
     } catch (e) {
