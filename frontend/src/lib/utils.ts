@@ -6,13 +6,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number | string | undefined | null): string {
-  if (amount === undefined || amount === null) return '$0.00';
-  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  if (amount === undefined || amount === null || isNaN(Number(amount))) return 'RD$ 0.00';
+  const num = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+  return `RD$ ${num.toLocaleString('es-DO', {
     minimumFractionDigits: 2,
-  }).format(num);
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 export function calculateDiscountPercentage(price: number, compareAtPrice?: number | null): number | null {
@@ -22,7 +21,7 @@ export function calculateDiscountPercentage(price: number, compareAtPrice?: numb
 }
 
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('es-ES', {
+  return new Date(dateString).toLocaleDateString('es-DO', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

@@ -627,7 +627,7 @@ export default function AdminProductsPage() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Precio Venta ($) *</label>
+                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Precio Venta (RD$) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -638,7 +638,7 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Precio Antes ($)</label>
+                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Precio Antes (RD$)</label>
                   <input
                     type="number"
                     step="0.01"

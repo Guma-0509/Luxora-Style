@@ -54,9 +54,9 @@ export default function CartPage() {
   }, []);
 
   const subtotal = getSubtotal();
-  const freeShippingThreshold = 150;
+  const freeShippingThreshold = 2500;
   const isFreeShipping = subtotal >= freeShippingThreshold;
-  const shippingCost = isFreeShipping ? 0 : 15;
+  const shippingCost = isFreeShipping ? 0 : 250;
   const discount = appliedCoupon ? appliedCoupon.discountAmount : 0;
   const taxRate = 0.18;
   const tax = Number((Math.max(subtotal - discount, 0) * taxRate).toFixed(2));

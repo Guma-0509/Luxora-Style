@@ -69,9 +69,9 @@ export default function CheckoutPage() {
   const [orderComplete, setOrderComplete] = useState<any | null>(null);
 
   const subtotal = getSubtotal();
-  const freeShippingThreshold = 150;
+  const freeShippingThreshold = 2500;
   const isFreeShipping = subtotal >= freeShippingThreshold && formData.shippingMethod === 'STANDARD';
-  const shippingCost = formData.shippingMethod === 'EXPRESS' ? 25 : isFreeShipping ? 0 : 15;
+  const shippingCost = formData.shippingMethod === 'EXPRESS' ? 450 : isFreeShipping ? 0 : 250;
   const discount = appliedCoupon ? appliedCoupon.discountAmount : 0;
   const taxRate = 0.18;
   const tax = Number((Math.max(subtotal - discount, 0) * taxRate).toFixed(2));

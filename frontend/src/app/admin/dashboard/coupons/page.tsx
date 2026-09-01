@@ -540,7 +540,7 @@ export default function AdminCouponsPage() {
                     className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3 py-2.5 text-xs text-[#353535] dark:text-[#F5F6F8] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
                   >
                     <option value="PERCENTAGE">Porcentaje (%)</option>
-                    <option value="FIXED_AMOUNT">Monto Fijo ($)</option>
+                    <option value="FIXED_AMOUNT">Monto Fijo (RD$)</option>
                   </select>
                 </div>
                 <div>
@@ -558,7 +558,7 @@ export default function AdminCouponsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Gasto Mínimo ($)</label>
+                  <label className="block text-xs font-bold text-[#353535] dark:text-[#F5F6F8] mb-1">Gasto Mínimo (RD$)</label>
                   <input
                     type="number"
                     value={formData.minSpend}

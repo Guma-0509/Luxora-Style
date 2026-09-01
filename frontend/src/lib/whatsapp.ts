@@ -1,4 +1,4 @@
-import { CartItem } from '../types';
+import { CartItem } from '../types/index';
 import { formatCurrency } from './utils';
 import { getStoredOrders, saveOrdersStore, getStoredProducts, saveProductsCatalog } from './catalogStore';
 
