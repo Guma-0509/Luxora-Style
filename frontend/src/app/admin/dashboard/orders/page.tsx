@@ -20,72 +20,7 @@ import {
 
 import { getStoredOrders, saveOrdersStore, deleteAllOrdersStore } from '../../../../lib/catalogStore';
 
-const INITIAL_ORDERS = [
-  {
-    id: 'ord-1',
-    orderNumber: 'ORD-20260830-4921',
-    customerName: 'Carlos Mendoza',
-    email: 'carlos@wallystore.com',
-    itemsCount: 3,
-    itemsDescription: 'Nike Air Jordan 1 Retro (42), T-Shirt Oversize (M)',
-    createdAt: new Date().toISOString(),
-    grandTotal: 225.0,
-    paymentMethod: 'Tarjeta de Crédito',
-    paymentStatus: 'Aprobado',
-    status: 'PAID',
-    carrier: 'FedEx Express',
-    trackingNumber: 'FDX-893019284',
-    shippingAddress: 'Av. Winston Churchill 109, Piantini, Santo Domingo',
-  },
-  {
-    id: 'ord-2',
-    orderNumber: 'ORD-20260830-8812',
-    customerName: 'Mariana Reyes',
-    email: 'mariana.reyes@email.com',
-    itemsCount: 2,
-    itemsDescription: 'Dior Sauvage EDP 100ml, Gorra NY Yankees',
-    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-    grandTotal: 173.0,
-    paymentMethod: 'Transferencia Bancaria',
-    paymentStatus: 'Verificado',
-    status: 'PROCESSING',
-    carrier: 'DHL Express',
-    trackingNumber: 'DHL-449102941',
-    shippingAddress: 'Calle El Sol #45, Santiago De Los Caballeros',
-  },
-  {
-    id: 'ord-3',
-    orderNumber: 'ORD-20260829-1092',
-    customerName: 'David Gómez',
-    email: 'david.gomez@gmail.com',
-    itemsCount: 4,
-    itemsDescription: 'Adidas Ultraboost (41), Jeans Slim Fit (32), Reloj Casio',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    grandTotal: 278.98,
-    paymentMethod: 'Tarjeta de Débito',
-    paymentStatus: 'Aprobado',
-    status: 'SHIPPED',
-    carrier: 'FedEx Express',
-    trackingNumber: 'FDX-994012485',
-    shippingAddress: 'Torre Empresarial Bella Vista, Piso 8, Santo Domingo',
-  },
-  {
-    id: 'ord-4',
-    orderNumber: 'ORD-20260828-0044',
-    customerName: 'Lucía Fernández',
-    email: 'lucia.f@hotmail.com',
-    itemsCount: 1,
-    itemsDescription: 'Bleu de Chanel Parfum 100ml',
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    grandTotal: 165.0,
-    paymentMethod: 'Tarjeta de Crédito',
-    paymentStatus: 'Aprobado',
-    status: 'DELIVERED',
-    carrier: 'DHL Express',
-    trackingNumber: 'DHL-102948172',
-    shippingAddress: 'Residencial Las Praderas #12, La Romana',
-  },
-];
+const INITIAL_ORDERS: any[] = [];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);

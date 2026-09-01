@@ -20,50 +20,7 @@ import {
 
 import { getStoredCoupons, saveCouponsStore, deleteAllCouponsStore } from '../../../../lib/catalogStore';
 
-const INITIAL_COUPONS = [
-  {
-    id: 'coup-1',
-    code: 'BIENVENIDO10',
-    description: '10% de descuento en tu primera compra de ropa o tenis',
-    type: 'PERCENTAGE',
-    value: 10,
-    minSpend: 50,
-    maxDiscount: 100,
-    startDate: '2026-01-01T00:00:00.000Z',
-    endDate: '2027-12-31T23:59:59.000Z',
-    usageLimit: 500,
-    usedCount: 34,
-    isActive: true,
-  },
-  {
-    id: 'coup-2',
-    code: 'LUXORAVIP50',
-    description: '$50 de descuento directo en compras mayores a $300',
-    type: 'FIXED_AMOUNT',
-    value: 50,
-    minSpend: 300,
-    maxDiscount: null,
-    startDate: '2026-01-01T00:00:00.000Z',
-    endDate: '2027-12-31T23:59:59.000Z',
-    usageLimit: 100,
-    usedCount: 12,
-    isActive: true,
-  },
-  {
-    id: 'coup-3',
-    code: 'SNEAKERS20',
-    description: '20% off en zapatillas y calzado urbano seleccionado',
-    type: 'PERCENTAGE',
-    value: 20,
-    minSpend: 80,
-    maxDiscount: 60,
-    startDate: '2026-06-01T00:00:00.000Z',
-    endDate: '2026-12-31T23:59:59.000Z',
-    usageLimit: 200,
-    usedCount: 89,
-    isActive: true,
-  },
-];
+const INITIAL_COUPONS: any[] = [];
 
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
