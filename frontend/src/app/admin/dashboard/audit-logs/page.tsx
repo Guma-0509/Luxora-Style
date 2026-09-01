@@ -19,6 +19,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
+import { getStoredAuditLogs, saveAuditLogsStore, deleteAllAuditLogsStore } from '../../../../lib/catalogStore';
+
 const INITIAL_AUDIT_LOGS = [
   {
     id: 'log-1',
@@ -121,7 +123,7 @@ const INITIAL_AUDIT_LOGS = [
 ];
 
 export default function AdminAuditLogsPage() {
-  const [logs, setLogs] = useState<any[]>(INITIAL_AUDIT_LOGS);
+  const [logs, setLogs] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
@@ -131,14 +133,16 @@ export default function AdminAuditLogsPage() {
   const [notification, setNotification] = useState<string | null>(null);
 
   useEffect(() => {
-    api
-      .get('/admin/audit-logs')
-      .then((res: any) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          setLogs(res.data);
-        }
-      })
-      .catch(() => {});
+    const local = getStoredAuditLogs();
+    if (typeof window !== 'undefined' && localStorage.getItem('luxora_logs_initialized')) {
+      setLogs(local);
+    } else {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('luxora_logs_initialized', 'true');
+        saveAuditLogsStore(INITIAL_AUDIT_LOGS);
+      }
+      setLogs(INITIAL_AUDIT_LOGS);
+    }
   }, []);
 
   const handleOpenView = (log: any) => {
@@ -147,13 +151,16 @@ export default function AdminAuditLogsPage() {
 
   const handleConfirmDeleteLog = () => {
     if (!logToDelete) return;
-    setLogs((prev) => prev.filter((l) => l.id !== logToDelete.id));
+    const updated = logs.filter((l) => l.id !== logToDelete.id);
+    setLogs(updated);
+    saveAuditLogsStore(updated);
     setLogToDelete(null);
     setNotification('Registro de auditoría eliminado');
     setTimeout(() => setNotification(null), 3500);
   };
 
   const handleConfirmClearAllLogs = () => {
+    deleteAllAuditLogsStore();
     setLogs([]);
     setIsClearAllModalOpen(false);
     setNotification('Se ha limpiado todo el historial de auditoría');

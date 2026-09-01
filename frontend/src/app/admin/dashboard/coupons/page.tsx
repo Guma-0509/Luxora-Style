@@ -18,6 +18,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
+import { getStoredCoupons, saveCouponsStore, deleteAllCouponsStore } from '../../../../lib/catalogStore';
+
 const INITIAL_COUPONS = [
   {
     id: 'coup-1',
@@ -64,7 +66,7 @@ const INITIAL_COUPONS = [
 ];
 
 export default function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<any[]>(INITIAL_COUPONS);
+  const [coupons, setCoupons] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<any | null>(null);
@@ -84,14 +86,16 @@ export default function AdminCouponsPage() {
   });
 
   useEffect(() => {
-    api
-      .get('/coupons')
-      .then((res: any) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          setCoupons(res.data);
-        }
-      })
-      .catch(() => {});
+    const local = getStoredCoupons();
+    if (typeof window !== 'undefined' && localStorage.getItem('luxora_coupons_initialized')) {
+      setCoupons(local);
+    } else {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('luxora_coupons_initialized', 'true');
+        saveCouponsStore(INITIAL_COUPONS);
+      }
+      setCoupons(INITIAL_COUPONS);
+    }
   }, []);
 
   const handleOpenCreate = () => {
@@ -126,22 +130,21 @@ export default function AdminCouponsPage() {
     e.preventDefault();
     if (!formData.code.trim()) return;
 
+    let updated: any[];
     if (editingCoupon) {
-      setCoupons((prev) =>
-        prev.map((c) =>
-          c.id === editingCoupon.id
-            ? {
-                ...c,
-                code: formData.code.toUpperCase().trim(),
-                description: formData.description,
-                type: formData.type,
-                value: Number(formData.value),
-                minSpend: Number(formData.minSpend) || 0,
-                maxDiscount: formData.maxDiscount ? Number(formData.maxDiscount) : null,
-                usageLimit: Number(formData.usageLimit) || 100,
-              }
-            : c,
-        ),
+      updated = coupons.map((c) =>
+        c.id === editingCoupon.id
+          ? {
+              ...c,
+              code: formData.code.toUpperCase().trim(),
+              description: formData.description,
+              type: formData.type,
+              value: Number(formData.value),
+              minSpend: Number(formData.minSpend) || 0,
+              maxDiscount: formData.maxDiscount ? Number(formData.maxDiscount) : null,
+              usageLimit: Number(formData.usageLimit) || 100,
+            }
+          : c,
       );
       showNotification('Cupón actualizado correctamente', 'success');
     } else {
@@ -159,28 +162,33 @@ export default function AdminCouponsPage() {
         usedCount: 0,
         isActive: true,
       };
-      setCoupons((prev) => [newCoupon, ...prev]);
+      updated = [newCoupon, ...coupons];
       showNotification('¡Cupón creado exitosamente!', 'success');
     }
+    setCoupons(updated);
+    saveCouponsStore(updated);
     setIsModalOpen(false);
   };
 
   const handleToggleActive = (id: string) => {
-    setCoupons((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c)),
-    );
+    const updated = coupons.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c));
+    setCoupons(updated);
+    saveCouponsStore(updated);
     showNotification('Estado del cupón actualizado', 'success');
   };
 
   const handleConfirmDelete = () => {
     if (!couponToDelete) return;
     const code = couponToDelete.code;
-    setCoupons((prev) => prev.filter((c) => c.id !== couponToDelete.id));
+    const updated = coupons.filter((c) => c.id !== couponToDelete.id);
+    setCoupons(updated);
+    saveCouponsStore(updated);
     setCouponToDelete(null);
     showNotification(`Cupón "${code}" eliminado`, 'success');
   };
 
   const handleConfirmClearAll = () => {
+    deleteAllCouponsStore();
     setCoupons([]);
     setIsClearAllModalOpen(false);
     showNotification('Se han eliminado todos los cupones promocionales', 'success');

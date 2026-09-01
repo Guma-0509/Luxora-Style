@@ -18,6 +18,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
+import { getStoredOrders, saveOrdersStore, deleteAllOrdersStore } from '../../../../lib/catalogStore';
+
 const INITIAL_ORDERS = [
   {
     id: 'ord-1',
@@ -86,7 +88,7 @@ const INITIAL_ORDERS = [
 ];
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<any[]>(INITIAL_ORDERS);
+  const [orders, setOrders] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<any | null>(null);
@@ -99,31 +101,16 @@ export default function AdminOrdersPage() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
-    api
-      .get('/admin/orders')
-      .then((res: any) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          setOrders(
-            res.data.map((o: any) => ({
-              id: o.id,
-              orderNumber: o.orderNumber,
-              customerName: `${o.user?.firstName || ''} ${o.user?.lastName || ''}`.trim() || 'Cliente',
-              email: o.user?.email || 'N/A',
-              itemsCount: o.items?.length || 1,
-              itemsDescription: o.items?.map((i: any) => i.title).join(', ') || 'Artículos de moda',
-              createdAt: o.createdAt,
-              grandTotal: Number(o.grandTotal || o.total),
-              paymentMethod: o.payment?.method || o.paymentMethod || 'Tarjeta',
-              paymentStatus: o.payment?.status || o.paymentStatus || 'Aprobado',
-              status: o.status,
-              carrier: o.carrier || 'FedEx Express',
-              trackingNumber: o.trackingNumber || '',
-              shippingAddress: o.shippingAddress || 'Dirección de envío registrada',
-            })),
-          );
-        }
-      })
-      .catch(() => {});
+    const local = getStoredOrders();
+    if (typeof window !== 'undefined' && localStorage.getItem('luxora_orders_initialized')) {
+      setOrders(local);
+    } else {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('luxora_orders_initialized', 'true');
+        saveOrdersStore(INITIAL_ORDERS);
+      }
+      setOrders(INITIAL_ORDERS);
+    }
   }, []);
 
   const handleOpenView = (ord: any) => {
@@ -140,7 +127,9 @@ export default function AdminOrdersPage() {
   const handleConfirmDeleteOrder = () => {
     if (!orderToDelete) return;
     const num = orderToDelete.orderNumber;
-    setOrders((prev) => prev.filter((o) => o.id !== orderToDelete.id));
+    const updated = orders.filter((o) => o.id !== orderToDelete.id);
+    setOrders(updated);
+    saveOrdersStore(updated);
     setOrderToDelete(null);
     setNotification({
       message: `Orden "${num}" eliminada exitosamente`,
@@ -150,6 +139,7 @@ export default function AdminOrdersPage() {
   };
 
   const handleConfirmClearAllOrders = () => {
+    deleteAllOrdersStore();
     setOrders([]);
     setIsClearAllModalOpen(false);
     setNotification({

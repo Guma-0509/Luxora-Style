@@ -7,6 +7,9 @@ import { api } from './api';
 
 const PRODUCTS_STORAGE_KEY = 'luxora_products_catalog';
 const CATEGORIES_STORAGE_KEY = 'luxora_categories_catalog';
+const ORDERS_STORAGE_KEY = 'luxora_orders_catalog';
+const COUPONS_STORAGE_KEY = 'luxora_coupons_catalog';
+const AUDIT_LOGS_STORAGE_KEY = 'luxora_audit_logs_catalog';
 const CATALOG_EVENT_NAME = 'luxora_catalog_updated';
 
 // Known legacy demo products to permanently filter out from local cache
@@ -22,7 +25,9 @@ const DEMO_PRODUCT_SKUS = [
   'BLU-CHN-100',
 ];
 
-// Helper to get stored products without ever re-injecting demo products
+// ----------------------------------------------------
+// 1. PRODUCTS STORE
+// ----------------------------------------------------
 export function getStoredProducts(): Product[] {
   if (typeof window === 'undefined') {
     return [];
@@ -33,7 +38,7 @@ export function getStoredProducts(): Product[] {
     if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        // Strip out any legacy demo products
+        // Strip out any legacy demo products automatically
         const filtered = parsed.filter(
           (p: Product) => !DEMO_PRODUCT_IDS.includes(p.id) && !DEMO_PRODUCT_SKUS.includes(p.sku)
         );
@@ -50,33 +55,17 @@ export function getStoredProducts(): Product[] {
   return [];
 }
 
-// Helper to get stored categories
-export function getStoredCategories(): Category[] {
-  if (typeof window === 'undefined') {
-    return INITIAL_CATEGORIES;
-  }
-
-  try {
-    const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-    if (raw !== null) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
+export function saveProductsCatalog(products: Product[]): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
+      window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'products', count: products.length } }));
+    } catch (e) {
+      console.error('Error saving products catalog:', e);
     }
-  } catch (e) {
-    console.error('Error reading stored categories:', e);
   }
-
-  // Fallback to default categories if none
-  try {
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
-  } catch (e) {}
-
-  return INITIAL_CATEGORIES;
 }
 
-// Save product to catalog (Add or Update)
 export function saveProductToCatalog(productData: Partial<Product> & { categoryName?: string; brandName?: string; stock?: number; imageUrl?: string }): Product {
   const currentProducts = getStoredProducts();
   const currentCategories = getStoredCategories();
@@ -92,7 +81,6 @@ export function saveProductToCatalog(productData: Partial<Product> & { categoryN
   const categorySlug = productData.category?.slug || categoryName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
   const brandName = productData.brandName || productData.brand?.name || 'Luxora Selection';
 
-  // Ensure category exists in categories list
   let matchingCategory = currentCategories.find(
     (c) => c.slug === categorySlug || c.name.toLowerCase() === categoryName.toLowerCase()
   );
@@ -120,7 +108,6 @@ export function saveProductToCatalog(productData: Partial<Product> & { categoryN
     },
   ];
 
-  // Prepare variants
   let variants: ProductVariant[] = productData.variants || [];
   if (variants.length === 0) {
     const stockVal = typeof productData.stock === 'number' ? productData.stock : 30;
@@ -135,7 +122,6 @@ export function saveProductToCatalog(productData: Partial<Product> & { categoryN
       },
     ];
   } else {
-    // Normalize variants
     variants = variants.map((v, idx) => ({
       ...v,
       id: v.id || `var-${Date.now()}-${idx}`,
@@ -183,21 +169,17 @@ export function saveProductToCatalog(productData: Partial<Product> & { categoryN
     updatedProducts = [...currentProducts];
     updatedProducts[existingIndex] = formattedProduct;
   } else {
-    // Put new product AT THE VERY BEGINNING (primera plana)
     updatedProducts = [formattedProduct, ...currentProducts];
   }
 
-  // Save to localStorage
   saveProductsCatalog(updatedProducts);
 
-  // Attempt async API sync in background without blocking
   api.post('/products', formattedProduct).catch(() => {});
   api.post('/admin/products', formattedProduct).catch(() => {});
 
   return formattedProduct;
 }
 
-// Delete product from catalog permanently
 export function deleteProductFromCatalog(productId: string): Product[] {
   const current = getStoredProducts();
   const updated = current.filter((p) => p.id !== productId && p.sku !== productId && p.slug !== productId);
@@ -209,33 +191,12 @@ export function deleteProductFromCatalog(productId: string): Product[] {
   return updated;
 }
 
-// Delete all products (clean wipe)
 export function deleteAllProductsFromCatalog(): Product[] {
   const updated: Product[] = [];
   saveProductsCatalog(updated);
   return updated;
 }
 
-// Delete category from catalog
-export function deleteCategoryFromCatalog(categoryId: string): Category[] {
-  const current = getStoredCategories();
-  const updated = current.filter((c) => c.id !== categoryId && c.slug !== categoryId);
-  saveCategoriesCatalog(updated);
-
-  api.delete(`/categories/${categoryId}`).catch(() => {});
-  api.delete(`/admin/categories/${categoryId}`).catch(() => {});
-
-  return updated;
-}
-
-// Delete all categories (clean wipe)
-export function deleteAllCategoriesFromCatalog(): Category[] {
-  const updated: Category[] = [];
-  saveCategoriesCatalog(updated);
-  return updated;
-}
-
-// Toggle product status (PUBLISHED / DRAFT)
 export function toggleProductStatusInCatalog(productId: string): Product[] {
   const current = getStoredProducts();
   const updated = current.map((p) => {
@@ -249,22 +210,41 @@ export function toggleProductStatusInCatalog(productId: string): Product[] {
   return updated;
 }
 
-// Save products catalog to localStorage & broadcast event
-export function saveProductsCatalog(products: Product[]): void {
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
-      window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'products', count: products.length } }));
-    } catch (e) {
-      console.error('Error saving products catalog:', e);
-    }
+// ----------------------------------------------------
+// 2. CATEGORIES STORE
+// ----------------------------------------------------
+export function getStoredCategories(): Category[] {
+  if (typeof window === 'undefined') {
+    return [];
   }
+
+  try {
+    const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    if (raw !== null) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed; // Returns [] cleanly without falling back to demo categories
+      }
+    }
+
+    // Only seed once on initial browser visit
+    const isInit = localStorage.getItem('luxora_categories_initialized');
+    if (!isInit) {
+      localStorage.setItem('luxora_categories_initialized', 'true');
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
+      return INITIAL_CATEGORIES;
+    }
+  } catch (e) {
+    console.error('Error reading stored categories:', e);
+  }
+
+  return [];
 }
 
-// Save categories catalog to localStorage & broadcast event
 export function saveCategoriesCatalog(categories: Category[]): void {
   if (typeof window !== 'undefined') {
     try {
+      localStorage.setItem('luxora_categories_initialized', 'true');
       localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
       window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'categories', count: categories.length } }));
     } catch (e) {
@@ -273,14 +253,122 @@ export function saveCategoriesCatalog(categories: Category[]): void {
   }
 }
 
-// Lookup single product by slug
+export function deleteCategoryFromCatalog(categoryId: string): Category[] {
+  const current = getStoredCategories();
+  const updated = current.filter((c) => c.id !== categoryId && c.slug !== categoryId);
+  saveCategoriesCatalog(updated);
+
+  api.delete(`/categories/${categoryId}`).catch(() => {});
+  api.delete(`/admin/categories/${categoryId}`).catch(() => {});
+
+  return updated;
+}
+
+export function deleteAllCategoriesFromCatalog(): Category[] {
+  const updated: Category[] = [];
+  saveCategoriesCatalog(updated);
+  return updated;
+}
+
+// ----------------------------------------------------
+// 3. ORDERS STORE
+// ----------------------------------------------------
+export function getStoredOrders(): any[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(ORDERS_STORAGE_KEY);
+    if (raw !== null) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+export function saveOrdersStore(orders: any[]): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+      window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'orders', count: orders.length } }));
+    } catch (e) {}
+  }
+}
+
+export function deleteAllOrdersStore(): any[] {
+  const updated: any[] = [];
+  saveOrdersStore(updated);
+  return updated;
+}
+
+// ----------------------------------------------------
+// 4. COUPONS STORE
+// ----------------------------------------------------
+export function getStoredCoupons(): any[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(COUPONS_STORAGE_KEY);
+    if (raw !== null) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+export function saveCouponsStore(coupons: any[]): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(COUPONS_STORAGE_KEY, JSON.stringify(coupons));
+      window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'coupons', count: coupons.length } }));
+    } catch (e) {}
+  }
+}
+
+export function deleteAllCouponsStore(): any[] {
+  const updated: any[] = [];
+  saveCouponsStore(updated);
+  return updated;
+}
+
+// ----------------------------------------------------
+// 5. AUDIT LOGS STORE
+// ----------------------------------------------------
+export function getStoredAuditLogs(): any[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(AUDIT_LOGS_STORAGE_KEY);
+    if (raw !== null) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+export function saveAuditLogsStore(logs: any[]): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(AUDIT_LOGS_STORAGE_KEY, JSON.stringify(logs));
+      window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'logs', count: logs.length } }));
+    } catch (e) {}
+  }
+}
+
+export function deleteAllAuditLogsStore(): any[] {
+  const updated: any[] = [];
+  saveAuditLogsStore(updated);
+  return updated;
+}
+
+// ----------------------------------------------------
+// 6. GENERAL UTILS & REACT HOOK
+// ----------------------------------------------------
 export function findProductBySlug(slug: string): Product | null {
   const products = getStoredProducts();
   const found = products.find((p) => p.slug === slug || p.id === slug);
   return found || null;
 }
 
-// Custom React Hook for live synchronization across all components
 export function useCatalog() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -297,7 +385,6 @@ export function useCatalog() {
   useEffect(() => {
     loadData();
 
-    // Listen for real-time catalog changes from other components/tabs
     const handleUpdate = () => {
       loadData();
     };
