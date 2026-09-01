@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Banknote,
 } from 'lucide-react';
+import { openWhatsAppOrder } from '../../lib/whatsapp';
+import { WhatsAppFilledIcon } from '../../components/common/WhatsAppIcon';
 
 interface CheckoutFormData {
   email: string;
@@ -184,9 +186,33 @@ export default function CheckoutPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() =>
+                  openWhatsAppOrder(
+                    orderComplete.items || items,
+                    subtotal,
+                    shippingCost,
+                    tax,
+                    grandTotal,
+                    discount,
+                    appliedCoupon?.code,
+                    {
+                      name: `${formData.firstName} ${formData.lastName}`,
+                      phone: formData.phone,
+                      address: formData.streetAddress,
+                      city: formData.city,
+                    }
+                  )
+                }
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#3C6E71] dark:bg-[#4D8B8E] py-3.5 text-xs font-black text-white hover:bg-[#284B63] dark:hover:bg-[#3C6E71] transition-colors shadow-subtle cursor-pointer"
+              >
+                <WhatsAppFilledIcon className="h-4 w-4" />
+                <span>Enviar Detalles por WhatsApp</span>
+              </button>
               <Link
                 href="/"
-                className="flex-1 rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] py-3.5 text-xs font-bold text-white hover:bg-[#284B63] dark:hover:bg-[#3C6E71] transition-colors shadow-subtle cursor-pointer"
+                className="flex-1 rounded-2xl bg-[#353535] dark:bg-[#242526] border border-[#D9D9D9] dark:border-[#3A3B3C] py-3.5 text-xs font-bold text-white hover:bg-[#284B63] dark:hover:bg-[#3C6E71] transition-colors shadow-subtle cursor-pointer flex items-center justify-center"
               >
                 Volver a la Tienda
               </Link>
@@ -620,9 +646,34 @@ export default function CheckoutPage() {
                   <span>Procesando Pedido...</span>
                 ) : (
                   <>
-                    Confirmar y Pagar <ArrowRight className="h-4 w-4" />
+                    Confirmar Pedido Web <ArrowRight className="h-4 w-4" />
                   </>
                 )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  openWhatsAppOrder(
+                    items,
+                    subtotal,
+                    shippingCost,
+                    tax,
+                    grandTotal,
+                    discount,
+                    appliedCoupon?.code,
+                    {
+                      name: `${formData.firstName} ${formData.lastName}`.trim() || undefined,
+                      phone: formData.phone || undefined,
+                      address: formData.streetAddress || undefined,
+                      city: formData.city || undefined,
+                    }
+                  )
+                }
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#3C6E71]/15 dark:bg-[#4D8B8E]/20 border border-[#3C6E71] dark:border-[#4D8B8E] py-3 text-xs font-black text-[#3C6E71] dark:text-[#4D8B8E] hover:bg-[#3C6E71] dark:hover:bg-[#4D8B8E] hover:text-white dark:hover:text-white transition-all transform active:scale-98 cursor-pointer"
+              >
+                <WhatsAppFilledIcon className="h-4 w-4" />
+                <span>Pedir Directamente por WhatsApp</span>
               </button>
 
               <div className="text-center text-[11px] text-[#777777] dark:text-[#A8ABB2]">

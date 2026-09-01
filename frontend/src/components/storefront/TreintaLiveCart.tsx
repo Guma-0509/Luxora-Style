@@ -1,82 +1,69 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useCartStore } from '../../store/cartStore';
 import { formatCurrency } from '../../lib/utils';
+import { openWhatsAppOrder } from '../../lib/whatsapp';
+import { WhatsAppFilledIcon } from '../common/WhatsAppIcon';
 import {
   ShoppingBag,
   Trash2,
   Plus,
   Minus,
   ArrowRight,
-  ShieldCheck,
-  Truck,
   Sparkles,
 } from 'lucide-react';
 
 export const TreintaLiveCart: React.FC = () => {
-  const { items, updateQuantity, removeItem, clearCart, getSubtotal, getItemCount } =
+  const { items, updateQuantity, removeItem, clearCart, getSubtotal } =
     useCartStore();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className="sticky top-20 rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 shadow-subtle">
-        <div className="flex items-center gap-2 border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-4">
-          <ShoppingBag className="h-5 w-5 text-[#353535] dark:text-[#F5F6F8]" />
-          <h2 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">Tu Canasta de Compra</h2>
-        </div>
-        <div className="py-10 text-center text-xs text-[#777777] dark:text-[#A8ABB2]">Cargando carrito...</div>
-      </div>
-    );
-  }
 
   const subtotal = getSubtotal();
-  const itemCount = getItemCount();
-  const freeShippingLimit = 150;
-  const isFreeShipping = subtotal >= freeShippingLimit;
-  const missingForFreeShipping = Math.max(0, freeShippingLimit - subtotal);
-  const shippingProgress = Math.min(100, Math.round((subtotal / freeShippingLimit) * 100));
+  const freeShippingThreshold = 150;
+  const isFreeShipping = subtotal >= freeShippingThreshold;
+  const missingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
+  const shippingProgress = Math.min(
+    100,
+    Math.round((subtotal / freeShippingThreshold) * 100),
+  );
+  const shippingCost = isFreeShipping ? 0 : 15;
+  const tax = Number((subtotal * 0.18).toFixed(2));
+  const estimatedTotal = Number((subtotal + shippingCost + tax).toFixed(2));
+
+  const handleWhatsAppCheckout = () => {
+    if (items.length === 0) return;
+    openWhatsAppOrder(items, subtotal, shippingCost, tax, estimatedTotal);
+  };
 
   return (
-    <div className="sticky top-20 flex flex-col rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] shadow-subtle overflow-hidden">
-      {/* 1. Header */}
-      <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] px-5 py-4">
+    <div className="flex flex-col rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] shadow-subtle overflow-hidden transition-colors">
+      {/* 1. Cart Header */}
+      <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20] px-5 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#353535] dark:bg-[#3C6E71] text-white">
-            <ShoppingBag className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="text-xs font-black text-[#353535] dark:text-[#F5F6F8] tracking-tight uppercase">
-              Canasta de Compra
-            </h2>
-            <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">
-              {itemCount} {itemCount === 1 ? 'artículo añadido' : 'artículos añadidos'}
-            </span>
-          </div>
+          <ShoppingBag className="h-5 w-5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+          <h3 className="text-sm font-black text-[#353535] dark:text-[#F5F6F8] tracking-tight">Tu Pedido</h3>
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#353535] dark:bg-[#4D8B8E] text-[10px] font-bold text-white">
+            {items.reduce((sum, item) => sum + item.quantity, 0)}
+          </span>
         </div>
 
         {items.length > 0 && (
           <button
             onClick={clearCart}
-            className="text-[10px] font-bold text-[#777777] dark:text-[#A8ABB2] hover:text-[#353535] dark:hover:text-[#F5F6F8] transition-colors cursor-pointer"
+            className="text-[11px] font-bold text-[#777777] dark:text-[#A8ABB2] hover:text-[#353535] dark:hover:text-[#F5F6F8] transition-colors cursor-pointer"
           >
             Vaciar
           </button>
         )}
       </div>
 
-      {/* 2. Free Shipping Meter */}
-      <div className="border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20] p-4 space-y-1.5">
-        <div className="flex justify-between text-[11px] font-bold text-[#353535] dark:text-[#F5F6F8]">
-          <span className="flex items-center gap-1">
-            <Truck className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
-            Envío Gratis Nacional
+      {/* 2. Free Shipping Progress Bar */}
+      <div className="border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-4 space-y-2">
+        <div className="flex items-center justify-between text-xs font-bold">
+          <span className="flex items-center gap-1.5 text-[#353535] dark:text-[#F5F6F8]">
+            <Sparkles className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
+            <span>Envío Gratis</span>
           </span>
           <span className="font-mono text-[#3C6E71] dark:text-[#4D8B8E]">{shippingProgress}%</span>
         </div>
@@ -178,9 +165,9 @@ export const TreintaLiveCart: React.FC = () => {
         )}
       </div>
 
-      {/* 4. Subtotal & Checkout Button */}
+      {/* 4. Subtotal & WhatsApp Checkout Button */}
       {items.length > 0 && (
-        <div className="border-t border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-5 space-y-4">
+        <div className="border-t border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-5 space-y-3">
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between text-[#777777] dark:text-[#A8ABB2]">
               <span>Subtotal</span>
@@ -195,18 +182,29 @@ export const TreintaLiveCart: React.FC = () => {
             <div className="flex justify-between text-sm font-black text-[#353535] dark:text-[#F5F6F8] pt-2 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
               <span>Total Estimado</span>
               <span className="font-mono">
-                {formatCurrency(subtotal + (isFreeShipping ? 0 : 15))}
+                {formatCurrency(estimatedTotal)}
               </span>
             </div>
           </div>
 
-          <Link
-            href="/checkout"
+          {/* BOTÓN WHATSAPP */}
+          <button
+            onClick={handleWhatsAppCheckout}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] py-3.5 text-xs font-black text-white shadow-subtle hover:bg-[#284B63] dark:hover:bg-[#3C6E71] transition-all transform active:scale-98 cursor-pointer"
           >
-            <span>Realizar Checkout</span>
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+            <WhatsAppFilledIcon className="h-4 w-4 text-[#3C6E71] dark:text-white" />
+            <span>Enviar Pedido a WhatsApp</span>
+            <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
+          </button>
+
+          <div className="text-center pt-1">
+            <Link
+              href="/cart"
+              className="text-[11px] font-bold text-[#777777] dark:text-[#A8ABB2] hover:text-[#353535] dark:hover:text-[#F5F6F8] transition-colors"
+            >
+              Ver Carrito Detallado &rarr;
+            </Link>
+          </div>
         </div>
       )}
     </div>
