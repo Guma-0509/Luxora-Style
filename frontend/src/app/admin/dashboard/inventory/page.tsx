@@ -27,6 +27,8 @@ export default function AdminInventoryPage() {
   const [search, setSearch] = useState('');
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<any | null>(null);
+  const [variantToZero, setVariantToZero] = useState<any | null>(null);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [adjustQuantity, setAdjustQuantity] = useState<number>(10);
   const [adjustType, setAdjustType] = useState<string>('PURCHASE');
   const [adjustReason, setAdjustReason] = useState<string>('Reabastecimiento de proveedor');
@@ -94,14 +96,14 @@ export default function AdminInventoryPage() {
     setTimeout(() => setNotification(null), 3500);
   };
 
-  const handleZeroStock = (item: any) => {
-    if (!confirm(`¿Deseas poner a 0 el stock de la variante "${item.sku}"?`)) return;
+  const handleConfirmZeroStock = () => {
+    if (!variantToZero) return;
 
     const allProducts = getStoredProducts();
     const updatedProducts = allProducts.map((p) => {
-      if (p.id === item.productId) {
+      if (p.id === variantToZero.productId) {
         const updatedVariants = (p.variants || []).map((v) =>
-          v.id === item.id ? { ...v, stock: 0 } : v
+          v.id === variantToZero.id ? { ...v, stock: 0 } : v
         );
         return { ...p, variants: updatedVariants };
       }
@@ -112,7 +114,26 @@ export default function AdminInventoryPage() {
     refreshCatalog();
 
     setNotification({
-      message: `Stock de ${item.sku} reseteado a 0 unidades`,
+      message: `Stock de ${variantToZero.sku} reseteado a 0 unidades`,
+      type: 'success',
+    });
+    setVariantToZero(null);
+    setTimeout(() => setNotification(null), 3500);
+  };
+
+  const handleConfirmClearAllInventory = () => {
+    const allProducts = getStoredProducts();
+    const updatedProducts = allProducts.map((p) => {
+      const zeroVariants = (p.variants || []).map((v) => ({ ...v, stock: 0 }));
+      return { ...p, variants: zeroVariants };
+    });
+
+    saveProductsCatalog(updatedProducts);
+    refreshCatalog();
+
+    setIsClearAllModalOpen(false);
+    setNotification({
+      message: 'Se ha vaciado el inventario (todas las existencias en 0)',
       type: 'success',
     });
     setTimeout(() => setNotification(null), 3500);
@@ -140,6 +161,18 @@ export default function AdminInventoryPage() {
           <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">
             Supervisa niveles de stock por variante (talla, color) de todos los productos
           </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {inventoryItems.length > 0 && (
+            <button
+              onClick={() => setIsClearAllModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-3.5 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Vaciar Todo ({inventoryItems.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -211,7 +244,11 @@ export default function AdminInventoryPage() {
               {filteredVariants.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-xs text-[#777777] dark:text-[#A8ABB2]">
-                    No se encontraron variantes en el inventario.
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Boxes className="h-8 w-8 text-[#777777] opacity-40" />
+                      <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">No hay variantes en inventario</p>
+                      <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Crea productos en el catálogo para administrar su inventario.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -273,9 +310,9 @@ export default function AdminInventoryPage() {
                             <span>Editar</span>
                           </button>
 
-                          {/* BORRAR */}
+                          {/* BORRAR / VACIAR */}
                           <button
-                            onClick={() => handleZeroStock(item)}
+                            onClick={() => setVariantToZero(item)}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
                             title="Vaciar Stock"
                           >
@@ -292,6 +329,103 @@ export default function AdminInventoryPage() {
           </table>
         </div>
       </div>
+
+      {/* SINGLE VARIANT ZERO STOCK MODAL */}
+      {variantToZero && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Vaciar Stock de Variante?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Pondrá el inventario en 0</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setVariantToZero(null)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <strong className="text-sm font-black text-[#353535] dark:text-[#F5F6F8]">{variantToZero.productName}</strong>
+              <p className="text-xs font-mono text-[#777777] dark:text-[#A8ABB2] mt-0.5">{variantToZero.sku} ({variantToZero.title})</p>
+              <p className="text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] mt-1">Stock actual: {variantToZero.stock} unidades</p>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setVariantToZero(null)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmZeroStock}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Poner Stock a 0</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CLEAR ALL INVENTORY MODAL */}
+      {isClearAllModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Vaciar Todo el Inventario?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Se pondrán todas las existencias en 0</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">
+              ¿Estás seguro de que deseas poner en <strong>0 unidades</strong> el inventario de todas las {inventoryItems.length} variantes?
+              Los productos permanecerán en el catálogo pero figurarán sin stock hasta que los reabastezcas.
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearAllInventory}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Sí, Vaciar Todo el Stock</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Adjust Stock Modal */}
       {selectedVariant && (

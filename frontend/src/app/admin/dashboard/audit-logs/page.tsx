@@ -16,6 +16,7 @@ import {
   Trash2,
   X,
   CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 
 const INITIAL_AUDIT_LOGS = [
@@ -125,6 +126,8 @@ export default function AdminAuditLogsPage() {
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [viewingLog, setViewingLog] = useState<any | null>(null);
+  const [logToDelete, setLogToDelete] = useState<any | null>(null);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
   useEffect(() => {
@@ -138,185 +141,158 @@ export default function AdminAuditLogsPage() {
       .catch(() => {});
   }, []);
 
-  const handleSimulateNewLog = () => {
-    const newLog = {
-      id: `log-${Date.now()}`,
-      action: 'SYSTEM_SETTINGS_UPDATE',
-      entity: 'StoreSettings',
-      entityId: 'settings-luxora',
-      description: 'Prueba de auditoría de seguridad registrada en vivo',
-      ipAddress: '127.0.0.1',
-      userAgent: 'Chrome / Next.js',
-      user: {
-        firstName: 'Admin',
-        lastName: 'Luxora',
-        email: 'admin@luxorastyle.com',
-        role: 'SUPER_ADMIN',
-      },
-      createdAt: new Date().toISOString(),
-      previousData: { theme: 'SYSTEM' },
-      newData: { theme: 'DARK', updatedBy: 'Admin' },
-    };
+  const handleOpenView = (log: any) => {
+    setViewingLog(log);
+  };
 
-    setLogs([newLog, ...logs]);
-    setNotification('Nuevo evento de auditoría generado y registrado');
+  const handleConfirmDeleteLog = () => {
+    if (!logToDelete) return;
+    setLogs((prev) => prev.filter((l) => l.id !== logToDelete.id));
+    setLogToDelete(null);
+    setNotification('Registro de auditoría eliminado');
     setTimeout(() => setNotification(null), 3500);
   };
 
-  const handleDeleteLog = (id: string, actionName: string) => {
-    if (!confirm(`¿Deseas eliminar el log "${actionName}"?`)) return;
-    setLogs((prev) => prev.filter((l) => l.id !== id));
-    setNotification(`Log "${actionName}" eliminado`);
+  const handleConfirmClearAllLogs = () => {
+    setLogs([]);
+    setIsClearAllModalOpen(false);
+    setNotification('Se ha limpiado todo el historial de auditoría');
     setTimeout(() => setNotification(null), 3500);
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedLogId(expandedLogId === id ? null : id);
-  };
-
-  const filteredLogs = logs.filter((log) => {
+  const filteredLogs = logs.filter((l) => {
     const matchesSearch =
-      log.action.toLowerCase().includes(search.toLowerCase()) ||
-      log.entity.toLowerCase().includes(search.toLowerCase()) ||
-      log.description.toLowerCase().includes(search.toLowerCase()) ||
-      (log.user?.email && log.user.email.toLowerCase().includes(search.toLowerCase()));
+      l.action.toLowerCase().includes(search.toLowerCase()) ||
+      l.description.toLowerCase().includes(search.toLowerCase()) ||
+      (l.user?.email && l.user.email.toLowerCase().includes(search.toLowerCase()));
 
-    let matchesCategory = true;
-    if (categoryFilter === 'PRODUCTS') matchesCategory = log.entity === 'Product';
-    if (categoryFilter === 'INVENTORY') matchesCategory = log.entity === 'InventoryVariant';
-    if (categoryFilter === 'ORDERS') matchesCategory = log.entity === 'Order';
-    if (categoryFilter === 'AUTH') matchesCategory = log.entity === 'AuthSession';
-
+    const matchesCategory = categoryFilter === 'ALL' || l.entity === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
   return (
     <div className="space-y-6">
-      {/* 1. Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-[#353535] dark:text-[#F5F6F8] tracking-tight flex items-center gap-2.5">
-            <ShieldCheck className="h-6 w-6 text-[#3C6E71] dark:text-[#4D8B8E]" />
-            Registro de Auditoría & Logs de Seguridad
+            <Activity className="h-6 w-6 text-[#3C6E71] dark:text-[#4D8B8E]" />
+            Auditoría del Sistema & Logs
           </h1>
           <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">
-            Trazabilidad inmutable de todas las mutaciones administrativas, accesos y cambios en el sistema
+            Registro inmutable de seguridad y trazabilidad de acciones operativas
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleSimulateNewLog}
-            className="inline-flex items-center gap-2 rounded-2xl bg-[#353535] dark:bg-[#4D8B8E] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#284B63] dark:hover:bg-[#3C6E71] transition-all shadow-subtle active:scale-98 cursor-pointer"
-          >
-            <Activity className="h-4 w-4" />
-            <span>Registrar Test Log</span>
-          </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {logs.length > 0 && (
+            <button
+              onClick={() => setIsClearAllModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-3.5 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Vaciar Todo ({logs.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* 2. Notification Toast */}
+      {/* Notification Toast */}
       {notification && (
-        <div className="flex items-center gap-2 rounded-2xl bg-[#FFFFFF] dark:bg-[#242526] border border-[#3C6E71] dark:border-[#4D8B8E] p-4 text-xs font-bold text-[#3C6E71] dark:text-[#4D8B8E] shadow-subtle animate-fadeIn">
+        <div className="flex items-center gap-2 rounded-2xl bg-[#FFFFFF] dark:bg-[#242526] border border-[#3C6E71] dark:border-[#4D8B8E] text-[#3C6E71] dark:text-[#4D8B8E] p-4 text-xs font-bold shadow-subtle animate-fadeIn">
           <CheckCircle2 className="h-4 w-4" />
           <span>{notification}</span>
         </div>
       )}
 
-      {/* 3. Filters Bar */}
+      {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row items-center gap-4 justify-between rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-4 shadow-subtle">
         <div className="relative flex-1 max-w-md w-full">
           <input
             type="text"
-            placeholder="Buscar por acción, entidad, usuario o detalle..."
+            placeholder="Buscar por acción, usuario o descripción..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3.5 py-2 pl-10 text-xs text-[#353535] dark:text-[#F5F6F8] placeholder:text-[#777777] dark:placeholder:text-[#A8ABB2] focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
           />
           <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#777777] dark:text-[#A8ABB2]" />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-2 text-xs font-bold text-[#777777] dark:text-[#A8ABB2] hover:text-[#353535] dark:hover:text-[#F5F6F8]"
+            >
+              ×
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {[
-            { id: 'ALL', label: 'Todos' },
-            { id: 'PRODUCTS', label: 'Productos' },
-            { id: 'INVENTORY', label: 'Inventario' },
-            { id: 'ORDERS', label: 'Pedidos' },
-            { id: 'AUTH', label: 'Seguridad' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setCategoryFilter(tab.id)}
-              className={`rounded-2xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                categoryFilter === tab.id
-                  ? 'bg-[#3C6E71] dark:bg-[#4D8B8E] text-white shadow-subtle'
-                  : 'bg-[#FFFFFF] dark:bg-[#1E1F20] text-[#777777] dark:text-[#A8ABB2] hover:text-[#353535] dark:hover:text-[#F5F6F8] border border-[#D9D9D9] dark:border-[#3A3B3C]'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-3 py-2 text-xs text-[#353535] dark:text-[#F5F6F8] font-bold focus:border-[#3C6E71] dark:focus:border-[#4D8B8E] focus:outline-none"
+          >
+            <option value="ALL">Todas las Entidades</option>
+            <option value="Product">Productos</option>
+            <option value="InventoryVariant">Inventario</option>
+            <option value="Order">Pedidos</option>
+            <option value="AuthSession">Seguridad & Sesiones</option>
+          </select>
         </div>
       </div>
 
-      {/* 4. Audit Logs Table */}
+      {/* Logs Table */}
       <div className="overflow-hidden rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] shadow-subtle">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#353535] dark:text-[#F5F6F8]">
-            <thead className="border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20] text-[11px] uppercase tracking-wider text-[#777777] dark:text-[#A8ABB2]">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#D9D9D9]/20 dark:bg-[#1E1F20] uppercase font-bold text-[#777777] dark:text-[#A8ABB2] text-[10px] tracking-wider">
               <tr>
-                <th className="py-3.5 px-4">Acción / Entidad</th>
-                <th className="py-3.5 px-4">Descripción del Cambio</th>
-                <th className="py-3.5 px-4">Usuario</th>
-                <th className="py-3.5 px-4">IP & Cliente</th>
-                <th className="py-3.5 px-4">Fecha / Hora</th>
+                <th className="py-3.5 px-4">Acción & Entidad</th>
+                <th className="py-3.5 px-4">Descripción del Evento</th>
+                <th className="py-3.5 px-4">Usuario Responsable</th>
+                <th className="py-3.5 px-4">Fecha & Hora</th>
                 <th className="py-3.5 px-4 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#D9D9D9]/60 dark:divide-[#3A3B3C]/60">
+            <tbody className="divide-y divide-[#D9D9D9]/60 dark:divide-[#3A3B3C]/60 text-[#353535] dark:text-[#F5F6F8]">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-xs text-[#777777] dark:text-[#A8ABB2]">
-                    No se encontraron registros de auditoría.
+                  <td colSpan={5} className="py-12 text-center text-xs text-[#777777] dark:text-[#A8ABB2]">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <ShieldCheck className="h-8 w-8 text-[#777777] opacity-40" />
+                      <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">No hay registros de auditoría</p>
+                      <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Los eventos y cambios en el sistema se registrarán aquí.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-[#D9D9D9]/15 dark:hover:bg-[#2E3236]/40 transition-colors">
+                filteredLogs.map((l) => (
+                  <tr key={l.id} className="hover:bg-[#D9D9D9]/15 dark:hover:bg-[#2E3236]/40 transition-colors">
                     <td className="py-3.5 px-4">
-                      <span className="inline-block font-mono font-bold text-[#3C6E71] dark:text-[#4D8B8E] text-xs">
-                        {log.action}
+                      <span className="font-mono font-bold text-[#3C6E71] dark:text-[#4D8B8E] block text-[11px]">
+                        {l.action}
                       </span>
-                      <span className="block text-[10px] text-[#777777] dark:text-[#A8ABB2] font-mono">
-                        {log.entity}
-                      </span>
+                      <span className="text-[10px] font-semibold text-[#777777] dark:text-[#A8ABB2]">{l.entity}</span>
                     </td>
                     <td className="py-3.5 px-4 max-w-sm">
-                      <p className="font-semibold text-[#353535] dark:text-[#F5F6F8]">{log.description || 'Operación registrada'}</p>
-                      <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] font-mono">ID: {log.entityId}</span>
+                      <p className="text-xs text-[#353535] dark:text-[#F5F6F8] font-medium line-clamp-2">{l.description}</p>
                     </td>
                     <td className="py-3.5 px-4">
                       <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">
-                        {log.user ? `${log.user.firstName} ${log.user.lastName}` : 'Sistema'}
+                        {l.user?.firstName} {l.user?.lastName}
                       </p>
-                      <p className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">{log.user?.email || 'system@wallystore.com'}</p>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-[#353535] dark:text-[#F5F6F8]">
-                      <span>{log.ipAddress || '127.0.0.1'}</span>
-                      <span className="block text-[9px] text-[#777777] dark:text-[#A8ABB2] truncate max-w-[120px]">
-                        {log.userAgent || 'Web Browser'}
-                      </span>
+                      <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] font-mono">{l.user?.email}</span>
                     </td>
                     <td className="py-3.5 px-4 text-[#777777] dark:text-[#A8ABB2] font-mono text-[11px]">
-                      {formatDate(log.createdAt)}
+                      {formatDate(l.createdAt)}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5 flex-wrap">
                         {/* VER */}
                         <button
-                          onClick={() => setViewingLog(log)}
+                          onClick={() => handleOpenView(l)}
                           className="inline-flex items-center gap-1.5 rounded-xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-2.5 py-1.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#3C6E71] dark:hover:border-[#4D8B8E] hover:text-[#3C6E71] dark:hover:text-[#4D8B8E] transition-all shadow-subtle cursor-pointer"
-                          title="Ver Payload"
+                          title="Ver Detalle JSON"
                         >
                           <Eye className="h-3.5 w-3.5 text-[#3C6E71] dark:text-[#4D8B8E]" />
                           <span>Ver</span>
@@ -324,9 +300,9 @@ export default function AdminAuditLogsPage() {
 
                         {/* BORRAR */}
                         <button
-                          onClick={() => handleDeleteLog(log.id, log.action)}
+                          onClick={() => setLogToDelete(l)}
                           className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
-                          title="Borrar Log"
+                          title="Eliminar Registro"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                           <span>Borrar</span>
@@ -341,17 +317,113 @@ export default function AdminAuditLogsPage() {
         </div>
       </div>
 
-      {/* VIEW LOG MODAL */}
+      {/* DELETE SINGLE LOG MODAL */}
+      {logToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Eliminar Registro de Log?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setLogToDelete(null)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <span className="font-mono font-bold text-xs text-[#3C6E71] dark:text-[#4D8B8E]">{logToDelete.action}</span>
+              <p className="text-xs text-[#353535] dark:text-[#F5F6F8] mt-1">{logToDelete.description}</p>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setLogToDelete(null)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteLog}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Sí, Eliminar Log</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CLEAR ALL LOGS MODAL */}
+      {isClearAllModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Limpiar Todo el Historial?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Se borrarán {logs.length} eventos de auditoría</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">
+              ¿Estás seguro de que deseas vaciar <strong>todos los logs de auditoría</strong> ({logs.length} registros)?
+              El historial de actividades del sistema quedará completamente limpio.
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearAllLogs}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Sí, Vaciar Todo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW LOG DETAILS MODAL */}
       {viewingLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
-          <div className="w-full max-w-xl rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+          <div className="w-full max-w-xl rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
               <div>
                 <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8] flex items-center gap-2">
                   <Code2 className="h-5 w-5 text-[#3C6E71] dark:text-[#4D8B8E]" />
                   Detalle del Evento de Auditoría
                 </h3>
-                <p className="text-xs font-mono font-bold text-[#3C6E71] dark:text-[#4D8B8E] mt-0.5">{viewingLog.action}</p>
+                <p className="text-xs font-mono text-[#3C6E71] dark:text-[#4D8B8E] mt-0.5">{viewingLog.action}</p>
               </div>
               <button
                 onClick={() => setViewingLog(null)}
@@ -362,34 +434,45 @@ export default function AdminAuditLogsPage() {
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
-                <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] block">Descripción:</span>
-                <p className="text-xs font-medium text-[#353535] dark:text-[#F5F6F8]">{viewingLog.description}</p>
+              <div className="p-3.5 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+                <strong className="text-[#353535] dark:text-[#F5F6F8] block font-bold">Descripción</strong>
+                <p className="text-[#777777] dark:text-[#A8ABB2] mt-0.5">{viewingLog.description}</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
                 <div>
-                  <span className="text-[11px] font-bold text-[#777777] dark:text-[#A8ABB2] uppercase tracking-wider block mb-1">
-                    Estado Anterior:
-                  </span>
-                  <pre className="rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] p-3 text-[11px] font-mono text-[#353535] dark:text-[#F5F6F8] overflow-x-auto border border-[#D9D9D9] dark:border-[#3A3B3C] max-h-48 leading-relaxed">
-                    {viewingLog.previousData
-                      ? JSON.stringify(viewingLog.previousData, null, 2)
-                      : '// Sin estado previo'}
-                  </pre>
+                  <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] block">Usuario</span>
+                  <strong className="text-[#353535] dark:text-[#F5F6F8]">{viewingLog.user?.firstName} {viewingLog.user?.lastName}</strong>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2] font-mono">{viewingLog.user?.email}</p>
                 </div>
-
                 <div>
-                  <span className="text-[11px] font-bold text-[#3C6E71] dark:text-[#4D8B8E] uppercase tracking-wider block mb-1">
-                    Nuevo Estado Registrado:
-                  </span>
-                  <pre className="rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] p-3 text-[11px] font-mono text-[#353535] dark:text-[#F5F6F8] overflow-x-auto border border-[#3C6E71] dark:border-[#4D8B8E] max-h-48 leading-relaxed font-semibold">
-                    {viewingLog.newData
-                      ? JSON.stringify(viewingLog.newData, null, 2)
-                      : '// Solo lectura'}
-                  </pre>
+                  <span className="text-[10px] text-[#777777] dark:text-[#A8ABB2] block">Dirección IP & Origen</span>
+                  <strong className="text-[#353535] dark:text-[#F5F6F8] font-mono">{viewingLog.ipAddress}</strong>
+                  <p className="text-[10px] text-[#777777] dark:text-[#A8ABB2]">{viewingLog.userAgent}</p>
                 </div>
               </div>
+
+              {viewingLog.previousData && (
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[#777777] dark:text-[#A8ABB2] block mb-1">
+                    Estado Anterior (Previous Data)
+                  </span>
+                  <pre className="rounded-2xl bg-[#1E1F20] p-3 text-[11px] font-mono text-amber-400 overflow-x-auto border border-[#3A3B3C]">
+                    {JSON.stringify(viewingLog.previousData, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {viewingLog.newData && (
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[#777777] dark:text-[#A8ABB2] block mb-1">
+                    Nuevo Estado (New Data)
+                  </span>
+                  <pre className="rounded-2xl bg-[#1E1F20] p-3 text-[11px] font-mono text-[#4D8B8E] overflow-x-auto border border-[#3A3B3C]">
+                    {JSON.stringify(viewingLog.newData, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
 
             <div className="pt-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C] flex justify-end">

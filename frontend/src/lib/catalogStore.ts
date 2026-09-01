@@ -228,6 +228,13 @@ export function deleteCategoryFromCatalog(categoryId: string): Category[] {
   return updated;
 }
 
+// Delete all categories (clean wipe)
+export function deleteAllCategoriesFromCatalog(): Category[] {
+  const updated: Category[] = [];
+  saveCategoriesCatalog(updated);
+  return updated;
+}
+
 // Toggle product status (PUBLISHED / DRAFT)
 export function toggleProductStatusInCatalog(productId: string): Product[] {
   const current = getStoredProducts();
@@ -328,6 +335,12 @@ export function useCatalog() {
     return updated;
   }, []);
 
+  const clearAllCategories = useCallback(() => {
+    const updated = deleteAllCategoriesFromCatalog();
+    setCategories(updated);
+    return updated;
+  }, []);
+
   const toggleStatus = useCallback((productId: string) => {
     const updated = toggleProductStatusInCatalog(productId);
     setProducts(updated);
@@ -342,6 +355,7 @@ export function useCatalog() {
     removeProduct,
     removeCategory,
     clearAllProducts,
+    clearAllCategories,
     toggleStatus,
     refreshCatalog: loadData,
   };

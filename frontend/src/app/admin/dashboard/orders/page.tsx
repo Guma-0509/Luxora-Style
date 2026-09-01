@@ -15,6 +15,7 @@ import {
   X,
   Package,
   CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 
 const INITIAL_ORDERS = [
@@ -90,6 +91,8 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<any | null>(null);
   const [selectedOrderForView, setSelectedOrderForView] = useState<any | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<any | null>(null);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [newStatus, setNewStatus] = useState('PAID');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [carrier, setCarrier] = useState('FedEx Express');
@@ -134,11 +137,23 @@ export default function AdminOrdersPage() {
     setCarrier(ord.carrier || 'FedEx Express');
   };
 
-  const handleDeleteOrder = (id: string, orderNumber: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar o cancelar la orden "${orderNumber}"?`)) return;
-    setOrders((prev) => prev.filter((o) => o.id !== id));
+  const handleConfirmDeleteOrder = () => {
+    if (!orderToDelete) return;
+    const num = orderToDelete.orderNumber;
+    setOrders((prev) => prev.filter((o) => o.id !== orderToDelete.id));
+    setOrderToDelete(null);
     setNotification({
-      message: `Orden "${orderNumber}" eliminada exitosamente`,
+      message: `Orden "${num}" eliminada exitosamente`,
+      type: 'success',
+    });
+    setTimeout(() => setNotification(null), 3500);
+  };
+
+  const handleConfirmClearAllOrders = () => {
+    setOrders([]);
+    setIsClearAllModalOpen(false);
+    setNotification({
+      message: 'Se han eliminado todas las órdenes del registro',
       type: 'success',
     });
     setTimeout(() => setNotification(null), 3500);
@@ -198,6 +213,18 @@ export default function AdminOrdersPage() {
           <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-1">
             Supervisa compras, clientes, estados de envío y números de seguimiento
           </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {orders.length > 0 && (
+            <button
+              onClick={() => setIsClearAllModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-3.5 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Vaciar Todo ({orders.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -271,7 +298,11 @@ export default function AdminOrdersPage() {
               {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-xs text-[#777777] dark:text-[#A8ABB2]">
-                    No se encontraron órdenes registradas.
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <ShoppingCart className="h-8 w-8 text-[#777777] opacity-40" />
+                      <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">No hay pedidos registrados</p>
+                      <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Los pedidos completados aparecerán listados aquí.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -330,7 +361,7 @@ export default function AdminOrdersPage() {
 
                         {/* BORRAR */}
                         <button
-                          onClick={() => handleDeleteOrder(ord.id, ord.orderNumber)}
+                          onClick={() => setOrderToDelete(ord)}
                           className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
                           title="Eliminar Pedido"
                         >
@@ -346,6 +377,103 @@ export default function AdminOrdersPage() {
           </table>
         </div>
       </div>
+
+      {/* DELETE SINGLE ORDER MODAL */}
+      {orderToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Eliminar Pedido?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setOrderToDelete(null)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#D9D9D9]/20 dark:bg-[#1E1F20] border border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <strong className="text-sm font-black text-[#353535] dark:text-[#F5F6F8]">{orderToDelete.orderNumber}</strong>
+              <p className="text-xs text-[#777777] dark:text-[#A8ABB2] mt-0.5">Cliente: {orderToDelete.customerName} ({orderToDelete.email})</p>
+              <p className="text-xs font-mono font-bold text-[#3C6E71] dark:text-[#4D8B8E] mt-1">Total: {formatCurrency(orderToDelete.grandTotal)}</p>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setOrderToDelete(null)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteOrder}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Sí, Eliminar Pedido</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CLEAR ALL ORDERS MODAL */}
+      {isClearAllModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Vaciar Todo el Historial de Pedidos?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Se eliminarán {orders.length} órdenes</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">
+              ¿Estás seguro de que deseas eliminar <strong>todos los pedidos</strong> ({orders.length} registros)?
+              El historial de ventas se vaciará por completo.
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearAllOrders}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Sí, Vaciar Todo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* VIEW ORDER DETAILS MODAL */}
       {selectedOrderForView && (
