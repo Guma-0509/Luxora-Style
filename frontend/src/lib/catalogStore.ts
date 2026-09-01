@@ -7,57 +7,64 @@ import { api } from './api';
 
 const PRODUCTS_STORAGE_KEY = 'luxora_products_catalog';
 const CATEGORIES_STORAGE_KEY = 'luxora_categories_catalog';
+const CATALOG_INITIALIZED_KEY = 'luxora_catalog_initialized_v2';
 const CATALOG_EVENT_NAME = 'luxora_catalog_updated';
 
 // Helper to get stored products or default initial products
 export function getStoredProducts(): Product[] {
   if (typeof window === 'undefined') {
-    return INITIAL_PRODUCTS;
+    return [];
   }
 
   try {
     const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
+    }
+
+    // Only seed initial products the very first time on a fresh browser
+    const isInitialized = localStorage.getItem(CATALOG_INITIALIZED_KEY);
+    if (!isInitialized) {
+      localStorage.setItem(CATALOG_INITIALIZED_KEY, 'true');
+      localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(INITIAL_PRODUCTS));
+      return INITIAL_PRODUCTS;
     }
   } catch (e) {
     console.error('Error reading stored products:', e);
   }
 
-  // If nothing stored yet, initialize with INITIAL_PRODUCTS
-  try {
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(INITIAL_PRODUCTS));
-  } catch (e) {}
-
-  return INITIAL_PRODUCTS;
+  return [];
 }
 
 // Helper to get stored categories
 export function getStoredCategories(): Category[] {
   if (typeof window === 'undefined') {
-    return INITIAL_CATEGORIES;
+    return [];
   }
 
   try {
     const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
+    }
+
+    const isInitialized = localStorage.getItem(CATALOG_INITIALIZED_KEY);
+    if (!isInitialized) {
+      localStorage.setItem(CATALOG_INITIALIZED_KEY, 'true');
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
+      return INITIAL_CATEGORIES;
     }
   } catch (e) {
     console.error('Error reading stored categories:', e);
   }
 
-  try {
-    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
-  } catch (e) {}
-
-  return INITIAL_CATEGORIES;
+  return [];
 }
 
 // Save product to catalog (Add or Update)
@@ -72,7 +79,7 @@ export function saveProductToCatalog(productData: Partial<Product> & { categoryN
   const basePrice = Number(productData.basePrice || 0);
   const compareAtPrice = productData.compareAtPrice ? Number(productData.compareAtPrice) : null;
   const status = (productData.status as any) || 'PUBLISHED';
-  const categoryName = productData.categoryName || productData.category?.name || 'Tenis & Sneakers';
+  const categoryName = productData.categoryName || productData.category?.name || 'General';
   const categorySlug = productData.category?.slug || categoryName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
   const brandName = productData.brandName || productData.brand?.name || 'Luxora Selection';
 
@@ -181,7 +188,7 @@ export function saveProductToCatalog(productData: Partial<Product> & { categoryN
   return formattedProduct;
 }
 
-// Delete product from catalog
+// Delete product from catalog permanently
 export function deleteProductFromCatalog(productId: string): Product[] {
   const current = getStoredProducts();
   const updated = current.filter((p) => p.id !== productId && p.sku !== productId && p.slug !== productId);
@@ -190,6 +197,13 @@ export function deleteProductFromCatalog(productId: string): Product[] {
   api.delete(`/products/${productId}`).catch(() => {});
   api.delete(`/admin/products/${productId}`).catch(() => {});
 
+  return updated;
+}
+
+// Delete all products (clean wipe)
+export function deleteAllProductsFromCatalog(): Product[] {
+  const updated: Product[] = [];
+  saveProductsCatalog(updated);
   return updated;
 }
 
@@ -223,6 +237,7 @@ export function toggleProductStatusInCatalog(productId: string): Product[] {
 export function saveProductsCatalog(products: Product[]): void {
   if (typeof window !== 'undefined') {
     try {
+      localStorage.setItem(CATALOG_INITIALIZED_KEY, 'true');
       localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
       window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'products', count: products.length } }));
     } catch (e) {
@@ -235,6 +250,7 @@ export function saveProductsCatalog(products: Product[]): void {
 export function saveCategoriesCatalog(categories: Category[]): void {
   if (typeof window !== 'undefined') {
     try {
+      localStorage.setItem(CATALOG_INITIALIZED_KEY, 'true');
       localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
       window.dispatchEvent(new CustomEvent(CATALOG_EVENT_NAME, { detail: { type: 'categories', count: categories.length } }));
     } catch (e) {
@@ -267,41 +283,6 @@ export function useCatalog() {
   useEffect(() => {
     loadData();
 
-    // Try background API fetch if server is running
-    api
-      .get('/categories')
-      .then((res: any) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          const currentCats = getStoredCategories();
-          const mergedCats = [...res.data];
-          currentCats.forEach((cc) => {
-            if (!mergedCats.some((mc) => mc.slug === cc.slug)) {
-              mergedCats.push(cc);
-            }
-          });
-          setCategories(mergedCats);
-          saveCategoriesCatalog(mergedCats);
-        }
-      })
-      .catch(() => {});
-
-    api
-      .get('/products')
-      .then((res: any) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          const currentProds = getStoredProducts();
-          const mergedProds = [...currentProds];
-          res.data.forEach((bp: any) => {
-            if (!mergedProds.some((mp) => mp.sku === bp.sku || mp.id === bp.id)) {
-              mergedProds.push(bp);
-            }
-          });
-          setProducts(mergedProds);
-          saveProductsCatalog(mergedProds);
-        }
-      })
-      .catch(() => {});
-
     // Listen for real-time catalog changes from other components/tabs
     const handleUpdate = () => {
       loadData();
@@ -328,15 +309,21 @@ export function useCatalog() {
     return updated;
   }, []);
 
-  const toggleStatus = useCallback((productId: string) => {
-    const updated = toggleProductStatusInCatalog(productId);
+  const removeCategory = useCallback((categoryId: string) => {
+    const updated = deleteCategoryFromCatalog(categoryId);
+    setCategories(updated);
+    return updated;
+  }, []);
+
+  const clearAllProducts = useCallback(() => {
+    const updated = deleteAllProductsFromCatalog();
     setProducts(updated);
     return updated;
   }, []);
 
-  const removeCategory = useCallback((categoryId: string) => {
-    const updated = deleteCategoryFromCatalog(categoryId);
-    setCategories(updated);
+  const toggleStatus = useCallback((productId: string) => {
+    const updated = toggleProductStatusInCatalog(productId);
+    setProducts(updated);
     return updated;
   }, []);
 
@@ -347,6 +334,7 @@ export function useCatalog() {
     addOrUpdateProduct,
     removeProduct,
     removeCategory,
+    clearAllProducts,
     toggleStatus,
     refreshCatalog: loadData,
   };

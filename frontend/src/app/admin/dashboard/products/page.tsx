@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { formatCurrency } from '../../../../lib/utils';
-import { useCatalog, deleteProductFromCatalog } from '../../../../lib/catalogStore';
+import { useCatalog, deleteProductFromCatalog, deleteAllProductsFromCatalog } from '../../../../lib/catalogStore';
 import { Product } from '../../../../types';
 import {
   Package,
@@ -26,11 +26,12 @@ import {
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
-  const { products, categories, addOrUpdateProduct, removeProduct, toggleStatus, refreshCatalog } = useCatalog();
+  const { products, categories, addOrUpdateProduct, removeProduct, clearAllProducts, toggleStatus, refreshCatalog } = useCatalog();
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [productToDelete, setProductToDelete] = useState<any | null>(null);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [formData, setFormData] = useState({
@@ -207,13 +208,22 @@ export default function AdminProductsPage() {
     const name = productToDelete.name;
     const id = productToDelete.id;
 
-    // Delete through both store helper and hook to guarantee removal
+    // Delete through both store helper and hook to guarantee permanent removal
     removeProduct(id);
     deleteProductFromCatalog(id);
     refreshCatalog();
 
     setProductToDelete(null);
     showNotification(`Producto "${name}" eliminado del catálogo`, 'success');
+  };
+
+  const handleConfirmClearAll = () => {
+    clearAllProducts();
+    deleteAllProductsFromCatalog();
+    refreshCatalog();
+
+    setIsClearAllModalOpen(false);
+    showNotification('Todos los productos han sido eliminados del catálogo', 'success');
   };
 
   const showNotification = (message: string, type: 'success' | 'error') => {
@@ -242,7 +252,7 @@ export default function AdminProductsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] px-3.5 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:border-[#353535] dark:hover:border-[#4D8B8E] transition-all shadow-subtle"
@@ -250,6 +260,16 @@ export default function AdminProductsPage() {
             <Store className="h-4 w-4 text-[#3C6E71] dark:text-[#4D8B8E]" />
             <span>Ver Primera Plana</span>
           </Link>
+
+          {products.length > 0 && (
+            <button
+              onClick={() => setIsClearAllModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-red-500/30 dark:border-red-500/40 bg-red-500/10 dark:bg-red-500/20 px-3.5 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white transition-all shadow-subtle cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Vaciar Todo ({products.length})</span>
+            </button>
+          )}
 
           <button
             onClick={handleOpenCreate}
@@ -323,7 +343,11 @@ export default function AdminProductsPage() {
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-xs text-[#777777] dark:text-[#A8ABB2]">
-                    No se encontraron productos coincidentes.
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Package className="h-8 w-8 text-[#777777] opacity-40" />
+                      <p className="font-bold text-[#353535] dark:text-[#F5F6F8]">No hay productos en el catálogo</p>
+                      <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Haz clic en &quot;Nuevo Producto&quot; para agregar tus propios artículos.</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -431,7 +455,7 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* 5. DELETE CONFIRMATION MODAL */}
+      {/* 5. DELETE INDIVIDUAL CONFIRMATION MODAL */}
       {productToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
@@ -471,7 +495,7 @@ export default function AdminProductsPage() {
             </div>
 
             <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">
-              ¿Estás seguro de que deseas eliminar este producto? Se retirará de la Primera Plana, del catálogo y de las búsquedas.
+              ¿Estás seguro de que deseas eliminar este producto? Se retirará de la Primera Plana, del catálogo y de las búsquedas permanentemente.
             </p>
 
             <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
@@ -495,7 +519,55 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* 6. CREATE / EDIT PRODUCT MODAL */}
+      {/* 6. CLEAR ALL CONFIRMATION MODAL */}
+      {isClearAllModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="w-full max-w-md rounded-3xl border border-red-500/30 dark:border-red-500/40 bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5">
+            <div className="flex items-center justify-between border-b border-[#D9D9D9] dark:border-[#3A3B3C] pb-3">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/30">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#353535] dark:text-[#F5F6F8]">¿Vaciar Todo el Catálogo?</h3>
+                  <p className="text-[11px] text-[#777777] dark:text-[#A8ABB2]">Se eliminarán {products.length} productos</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="rounded-full p-1.5 text-[#777777] dark:text-[#A8ABB2] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#777777] dark:text-[#A8ABB2]">
+              ¿Estás seguro de que deseas eliminar <strong>todos los productos actuales</strong> ({products.length} artículos)?
+              El catálogo quedará totalmente vacío y limpio para que agregues únicamente tus propios productos. No se volverán a restaurar productos demo.
+            </p>
+
+            <div className="pt-2 flex items-center justify-end gap-3 border-t border-[#D9D9D9] dark:border-[#3A3B3C]">
+              <button
+                type="button"
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="rounded-2xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#1E1F20] px-4 py-2.5 text-xs font-bold text-[#353535] dark:text-[#F5F6F8] hover:bg-[#D9D9D9]/30 dark:hover:bg-[#2E3236] cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClearAll}
+                className="rounded-2xl bg-red-600 hover:bg-red-700 px-5 py-2.5 text-xs font-bold text-white shadow-subtle active:scale-98 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Sí, Vaciar Todo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. CREATE / EDIT PRODUCT MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-fadeIn">
           <div className="w-full max-w-xl rounded-3xl border border-[#D9D9D9] dark:border-[#3A3B3C] bg-[#FFFFFF] dark:bg-[#242526] p-6 sm:p-8 shadow-dropdown space-y-5 max-h-[90vh] overflow-y-auto">
